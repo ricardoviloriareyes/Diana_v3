@@ -4,9 +4,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
-
-
-
+//#include <RTClib.h>
+#include <Adafruit_NeoPixel.h>
 
 // botones de navegacion
 #define BTN_AVANZA  0
@@ -199,7 +198,7 @@ int8_t h_nombre_jugadores = REINICIA_VARIABLES_NOMBRES;
 
           
 // variables de control para pausa
-ulong previous_time, current_time;
+ulong previous_time, current_time, previous_time_leds_solicitud;
 
 
 // variables para configuracion
@@ -215,11 +214,11 @@ int8_t numero_actual_jugadores = DOS;
 
 // variables para nombres de jugadores
 int8_t nombres_asignados = 1;
-String j0 ="numeros";
-String j1 = "UNO";
-String j2 = "DOS";
-String j3 = "TRES";
-String j4 = "CUATRO";
+String j_0 ="numeros";
+String j_1= "UNO";
+String j_2 = "DOS";
+String j_3 = "TRES";
+String j_4 = "CUATRO";
 String todos_los_nombres = "----------";
 String nombres_jugadores[5]={"numeros","UNO","DOS","TRES","CUATRO"};
 
@@ -402,9 +401,7 @@ float tiempo;
 
 structura_mensaje datos_enviados;
 structura_mensaje datos_recibidos;
-structura_mensaje diana1;
-structura_mensaje diana2; 
-structura_mensaje diana3;
+structura_mensaje datos_locales_diana;  // para usar en diana
 
 
 #define TEST 0
@@ -439,32 +436,7 @@ void readMacAddress()
 #define VACIO 0
 #define CON_MENSAJE 1
 
-/* ---------------------------------------------------------------------*/
 
-// Callback when data is received
-void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
-{
-  memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
-  //informacion de longuitud de paquete
-  Serial.print("Bytes received: ");
-  Serial.println(len);
- 
-  char macStr[18];
-  Serial.print("Packet received from: ");
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  Serial.println(macStr);
-
-  if (datos_recibidos.t==TIRO_ACTIVO)
-    {
-      // actualiza datos juegador propietario del disparo
-         jugador_tiempo[datos_recibidos.p]= jugador_tiempo[datos_recibidos.p]+datos_recibidos.tiempo;
-         tiros_de_jugador[datos_recibidos.p]=tiros_de_jugador[datos_recibidos.p]++;
-      // libera diana para recibir una nueva peticion de tiro
-          status_diana[datos_recibidos.d] =LIBRE;
-    }
-}
-
-/* ---------------------------------------------------------------------*/
 
 
 // chequeo de dianas en linea
@@ -598,13 +570,89 @@ void Test_Conexion_Diana()
 
 }
 
+ /* -------------VARIABLES DE RECEPCION DE DATOS---------------------------------*/
+
+int8_t rojo=0;
+int8_t verde=0;
+int8_t azul=0;
+#define NULO 0
+int color_diana = NULO;
+#define TIEMPO_DE_RETARDO_DE_RESPUESTA 500 // 500 mseg entre termino de disparo y envio a monitor
+
+#define EN_ESPERA 0
+#define INICIA_PROCESO 1
+#define ENCIENDE_SOLICITUD 2
+#define ESPERA_LEDS_SOLICITUD 3
+int menu_proceso_diana = EN_ESPERA;
+
+// Callback when data is received
+void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
+{
+  memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
+  //informacion de longuitud de paquete
+  Serial.print("Bytes received: ");
+  Serial.println(len);
  
+  char macStr[18];
+  Serial.print("Packet received from: ");
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.println(macStr);
+  
 
-/* ---------------------------------------------------------------------*/
+  if (datos_recibidos.t==TIRO_ACTIVO)
+    {      
+      datos_locales_diana.t =datos_recibidos.t;
+      datos_locales_diana.c =datos_recibidos.c;
+      datos_locales_diana.d =datos_recibidos.d;
+      datos_locales_diana.p =datos_recibidos.p;
+      datos_locales_diana.tiempo=0.00;
+      menu_proceso_diana=INICIA_PROCESO;
+      switch (datos_locales_diana.c)
+      {
+      case GREEN:
+        rojo=0;
+        verde=10;
+        azul=0;
+        break;
+      case BLUE:
+        rojo=0;
+        verde=0;
+        azul=10;
+        break;
+      default:
+        break;
+      }
+    }
+}
 
+//variables menu juego 2
+#define REINICIA_JUEGO_2 1
+int8_t menu_navegacion_juego2 =REINICIA_JUEGO_2;
+
+//variables para deteccion de disparo en analisis de frecuencia
+#define SIN_DETECCION 0
+#define LASER_APUNTANDO 2
+#define DISPARO_DETECTADO 3
+int8_t estado_detector = SIN_DETECCION;
+
+// definicion de io-esp32
+const int pin_leds = 2;
+uint8_t led_inicio=0;
+int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
+#define NUMPIXELS 46
+Adafruit_NeoPixel pixels(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
+
+
+/* ------------------------S E T     U P --------------------------------*/
 
 void setup() 
 {
+// inicia puerto de salida de leds
+pinMode (pin_leds,OUTPUT);
+
+// inicia Neopixel strip
+pixels.begin();
+pixels.clear(); // inicializa todos en off
 
 // inicia comunicacion serial
 Serial.begin(115200);
@@ -664,18 +712,61 @@ e_juego_seleccion=ESCRIBE_MENSAJE_SELECCION;
 f_no_jugadores = REINICIA_ESCRITURA;
 h_nombre_jugadores=REINICIA_VARIABLES_NOMBRES;
 
-//variables menu juego 2
-#define REINICIA_JUEGO_2 1
-int8_t menu_navegacion_juego2 =REINICIA_JUEGO_2;
 
-//dianas operandor
+
 
 }// fin setup
 
-/* ---------------------------------------------------------------------*/
+/* ----------------------F I N    S E T    U P -------------------------*/
+
 
 void loop() 
 {
+  estado_detector =Analisis_De_Frecuencia();
+  /* revision permanente del procesamiento de solicitud a diana*/
+  switch (menu_proceso_diana)
+    {
+    case EN_ESPERA:
+      /* code */
+      /*se mantiene aqui, hasta qeu se inicie el proceso en el void
+      de recepcion de solicitud, ahi se asigna los datos de color,*/
+      break;
+    case INICIA_PROCESO:
+        /*  contador de tiempo*/
+        previous_time=millis();
+        previous_time_leds_solicitud=millis();
+        menu_proceso_diana=ENCIENDE_SOLICITUD;
+        led_inicio=0;
+        break;
+    case ENCIENDE_SOLICITUD:
+        //int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
+        pixels.setPixelColor(orden_led_ [led_inicio+1],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+2],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+3],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+4],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+5],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+6],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+7],pixels.Color(rojo,verde,azul));
+        pixels.setPixelColor(orden_led_ [led_inicio+8],pixels.Color(rojo,verde,azul));
+        pixels.show();
+        menu_proceso_diana=ESPERA_LEDS_SOLICITUD;
+    case ESPERA_LEDS_SOLICITUD:
+        // actual_time_led_solicitud=millis();
+         if (previous_time_leds_solicitud)
+         {
+
+         }
+      
+      break;
+    
+    
+    default:
+      break;
+    } // fin switch
+
+
+
+  /* programa anterior ++++++++++++++++++++++++++++++++*/
   if (enviar_disparo_a_diana==SI)
   {
    Enviar_Disparo();
@@ -819,6 +910,10 @@ void loop()
   } // fin switch (a_menu)
 } // FIN  loop ---------------------------------------------------
 
+int Analisis_De_Frecuencia()
+{
+
+}
 
 
 /* ---------------------------------------------------------------------*/
@@ -2111,7 +2206,7 @@ void Selecciona_Nombres_x()
         switch (nombres_asignados)
             {
               case UNO:
-                  j0="NUMEROS"; j1="UNO";j2="DOS"; j3="TRES"; j4="CUATRO";
+                  j_0="NUMEROS"; j_1="UNO";j_2="DOS"; j_3="TRES"; j_4="CUATRO";
                   nombres_jugadores[0]="NUMEROS";
                   nombres_jugadores[1]="UNO";
                   nombres_jugadores[2]="DOS";
@@ -2120,7 +2215,7 @@ void Selecciona_Nombres_x()
                   break;
 
               case DOS:
-                  j0="SUPERHEROES";j1="BARMAN"; j2="DROGIN"; j3="SUPER-BAR"; j4="RAPIDIN";
+                  j_0="SUPERHEROES";j_1="BARMAN"; j_2="DROGIN"; j_3="SUPER-BAR"; j_4="RAPIDIN";
                   nombres_jugadores[0]="HEROES";
                   nombres_jugadores[1]="BARMAN";
                   nombres_jugadores[2]="DROGIN";
@@ -2129,7 +2224,7 @@ void Selecciona_Nombres_x()
                   break;
 
             }
-        todos_los_nombres=j1+"-"+j2+"-"+j3+"-"+j4;
+        todos_los_nombres=j_1+"-"+j_2+"-"+j_3+"-"+j_4;
       }
     /*fin avanza*/
 
@@ -2160,7 +2255,7 @@ void Selecciona_Nombres_x()
         case ESCRIBE_TITULO_NOMBRES:
             if (titulo_escrito==NO)
               {
-                Escribir(A1,FIJO,GREEN ,j0);
+                Escribir(A1,FIJO,GREEN ,j_0);
                 titulo_escrito=SI;
                 h_nombre_jugadores =ESCRIBE_GRUPO_NOMBRES;
               }
@@ -2377,6 +2472,10 @@ void Genera_Claves_y_guarda()
   float dclave2;
   dclave1=2+rand()%97;
   dclave2=2+rand()%97; 
+   while (dclave1==dclave2)
+    {
+    dclave2=2+rand()%97; 
+    }
   acumulado=log(dclave1/10)+log(dclave2/10);
   acumulado = acumulado-int(acumulado);
   acumulado=acumulado*1000;
