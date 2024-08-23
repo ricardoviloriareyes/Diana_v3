@@ -212,6 +212,7 @@ ulong frecuencia_disparo_azul =4800;
 /* ----------------- ENVIO DE DATOS -----------------------------*/
 int enviar_datos=NO;
 String success;
+
 // Callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) 
 {
@@ -294,9 +295,6 @@ Adafruit_NeoPixel pixels(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
 int prende_leds=SI;
 int8_t destello =1;
 
-
-
-
 int primer_encendido_apunta = SI;
 uint8_t led_apunta=5;
 
@@ -333,6 +331,10 @@ void Test_Conexion_Diana();
 void readMacAddress();
 void Inicia_ESP_NOW();
 void Peer_Monitor_En_Linea();
+void x_Espera_Leds_Solicitud();
+void x_Enciende_Solicitud();
+void x_Espera_Leds_Solicitud();
+void x_Esperando_en_Apunta();
 void x_Envia_Resultados();
 
 
@@ -374,15 +376,16 @@ void setup()
 
 void loop() 
 {
+  // envio de datos activado en x_envia_resultados();
   if (enviar_datos=SI)
   {
     esp_err_t result = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
-
     if (result == ESP_OK) 
       {
         Serial.println("Sent with success");
         menu_proceso_diana=DATOS_ENVIADOS_OK;
         menu_resultados=P1_INICIA;
+        enviar_datos=NO;
       }
     else 
       {
@@ -390,6 +393,7 @@ void loop()
         intentos_envio++;
         menu_resultados=P4_PAUSA;
         previous_time=millis();
+        enviar_datos=NO;
       }
   }
 
@@ -397,255 +401,208 @@ void loop()
   switch (estado_diana)
     {
       case APAGADO:
-          /* code */
-          /*se mantiene aqui, hasta qeu se inicie el proceso en el void
-          de recepcion de solicitud, ahi se asigna los datos de color,*/
-          break;
-
+        /* code */
+        /*se mantiene aqui, hasta qeu se inicie el proceso en el void
+        de recepcion de solicitud, ahi se asigna los datos de color,*/
+        break;
       case ENCENDIDO:
-          switch (menu_proceso_diana)
-            {
-              case INICIA_CONTADOR_TIEMPO:
-                   tiempo_inicial=millis();
-                   menu_proceso_diana=INICIA_PROCESO_SOLICITUD;
-                   break;
-
-              case INICIA_PROCESO_SOLICITUD:
-                  x_inicia_proceso_solicitud();
-                  break;
-
-              case ENCIENDE_SOLICITUD:
-                  if (prende_leds==SI)
-                    {
-                      //int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
-                      pixels.setPixelColor(orden_led_ [led_inicio+1],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+2],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+3],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+4],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+5],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+6],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+7],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.setPixelColor(orden_led_ [led_inicio+8],pixels.Color(rojo,verde*10,azul*10));
-                      pixels.show();
-                      prende_leds=NO;
-                    }
-                  menu_proceso_diana=ESPERA_LEDS_SOLICITUD;
-                  break;
-        
-              case ESPERA_LEDS_SOLICITUD:
-                  frecuencia_detectada =Analisis_De_Frecuencia(); 
-                  // frecuencia_detectada = 0 SIN DETECCION / 1 LASER_APUNTANDO/ 2 DISPARO_DETECTADO
-                  switch (frecuencia_detectada)
-                    {
-                      case SIN_DETECCION:
-                        /* continua con la solicitud de disparo*/
-                        actual_time_solicitud=millis();
-                        if (actual_time_solicitud > (previous_time_solicitud+300))
-                          {
-                            pixels.clear();
-                            led_inicio=led_inicio+8;
-                            if (led_inicio>40)
-                              {
-                                led_inicio=0;
-                              }
-                            prende_leds=SI;
-                            previous_time_solicitud=millis();
-                            menu_proceso_diana=ENCIENDE_SOLICITUD;
-                          }                        
-                        break;
-
-                      case LASER_APUNTANDO:
-                        menu_proceso_diana=INICIA_PROCESO_APUNTANDO;
-                        prende_leds=SI;
-                        break;
-                      
-                      case DISPARO_DETECTADO:
-                        menu_proceso_diana=INICIA_PROCESO_DISPARO;
-                        prende_leds=SI;
-                        led_apunta=5;
-                        break;
-
-                    } //fin de switch frecuencia_detectada
-                  break;
-
-              case INICIA_PROCESO_APUNTANDO:
-                 /*  contador de tiempo*/
-                  previous_time=millis();
-                  previous_time_solicitud=millis();
-                  menu_proceso_diana=ENCIENDE_APUNTANDO;
-                  prende_leds=SI;
-                  led_apunta=5;
-                  break;    
-
-              case ENCIENDE_APUNTANDO:
-                  x_Enciende_Apuntando();
-                  menu_proceso_diana=ESPERA_LEDS_APUNTA;
-                  break;
-
-              case ESPERA_LEDS_APUNTA:
-                  frecuencia_detectada =Analisis_De_Frecuencia(); 
-                  switch (frecuencia_detectada)
-                    {
-                      case SIN_DETECCION:
-                        /* regresa a solicitud*/
-                           menu_proceso_diana=INICIA_PROCESO_SOLICITUD;                   
-                        break;
-
-                      case LASER_APUNTANDO:
-                        actual_time_solicitud=millis();
-                        if (actual_time_solicitud > (previous_time_solicitud+50))
-                            {
-                              led_apunta++;
-                              previous_time_solicitud=millis();
-                              if (led_apunta>50)
-                                {
-                                  led_apunta=5;
-                                }
-                              menu_proceso_diana=ENCIENDE_APUNTANDO;
-                              prende_leds=SI;
-                            }       
-                        break;
-                      
-                      case DISPARO_DETECTADO:
-                        menu_proceso_diana=INICIA_PROCESO_DISPARO;
-                        prende_leds=SI;
-                        led_apunta=1;
-                        previous_time=millis();
-                        tiempo_final=millis();
-                        break;
-
-                    } //fin de switch frecuencia_detectada               
-                  break;
-
-              case INICIA_PROCESO_DISPARO:
-                  previous_time=millis();
-                  previous_time_solicitud=millis();
-                  prende_leds=SI;
-                  destello=1;
-                  menu_proceso_diana=ENCIENDE_DISPARO;
-                  break;
-
-
-              case ENCIENDE_DISPARO:
-                  x_Enciende_Disparo_Destellos();
-                  menu_proceso_diana=ESPERA_LEDS_DISPARO;
-                  break;
-
-              case ESPERA_LEDS_DISPARO:
-                  x_Espera_Leds_Disparo();
-                  break;
-
-              case ESPERA_ENVIO_RESULTADOS:
-                         actual_time_solicitud=millis();
-                        if (actual_time_solicitud > (previous_time_solicitud+500))
-                          {
-                           menu_proceso_diana=ENVIA_RESULTADOS;
-                           menu_transmision=INICIALIZA_TRANSMISION;
-                          }   
-                        break;
-
-              case ENVIA_RESULTADOS:
-                 // x_Envia_Resultados();
-                 switch (menu_resultados)
-                  {
-                  case P1_INICIA:
-                    /* code */
-                    menu_resultados=P2_PREPARA;
-                    break;
-                  case P2_PREPARA:
-                    datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
-                    datos_enviados.d=datos_locales_diana.d; //diana
-                    datos_enviados.c=datos_locales_diana.c;   // color disparo
-                    datos_enviados.p=datos_locales_diana.p;
-                    datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
-                    intentos_envio=1;
-                    menu_resultados=P3_ENVIA;
-                    break;
-
-                  case P3_ENVIA:
-                      enviar_datos=SI;
-                      break;
-
-                  case P4_PAUSA:
-                      current_time=millis();
-                      if (current_time>(previous_time+200))
-                        {
-                          if (intentos_envio<4)
-                            {
-                              menu_resultados=P3_ENVIA;
-                              intentos_envio=intentos_envio+1;
-                            }
-                          else // manda mensaje de error
-                            {
-                              pixels.clear();
-                              for (int i=2;i<=6;i++)
-                                {
-                                  pixels.setPixelColor(i,pixels.Color(10,0,0));
-                                }
-                              pixels.show();
-                              menu_proceso_diana=DATOS_ENVIADOS_OK;
-                            }
-                        }
-                        break;
-                   } //fin switch menu_resultados
-                   break;
-
-                case DATOS_ENVIADOS_OK:
-                     estado_diana=APAGADO;
-                     pixels.clear();
-                     break;
-
-            } // fin switch menu_proceso_diana
-          break;
-
-    }  // fin switch estado_diana
-
-} // FIN  loop ---------------------------------------------------
-
-
-/*
-void x_Envia_Resultados()
-{
-  switch (menu_transmision2)
-    {
-      case INICIALIZA_TRANSMISION2: 
-        menu_transmision2=PREPARA_PAQUETE_ENVIO;
+        switch (menu_proceso_diana)
+          {
+            case INICIA_CONTADOR_TIEMPO:
+              tiempo_inicial=millis();
+              menu_proceso_diana=INICIA_PROCESO_SOLICITUD;
+              break;
+            case INICIA_PROCESO_SOLICITUD:
+              x_inicia_proceso_solicitud();
+              menu_proceso_diana=ENCIENDE_SOLICITUD;
+              break;
+            case ENCIENDE_SOLICITUD:
+              x_Enciende_Solicitud();
+              menu_proceso_diana=ESPERA_LEDS_SOLICITUD;
+              break;
+            case ESPERA_LEDS_SOLICITUD:
+              x_Espera_Leds_Solicitud();
+              break;
+            case INICIA_PROCESO_APUNTANDO:
+              /*  contador de tiempo*/
+              previous_time=millis();
+              previous_time_solicitud=millis();
+              menu_proceso_diana=ENCIENDE_APUNTANDO;
+              prende_leds=SI;
+              led_apunta=5;
+              break;    
+            case ENCIENDE_APUNTANDO:
+              x_Enciende_Apuntando();
+              menu_proceso_diana=ESPERA_LEDS_APUNTA;
+              break;
+            case ESPERA_LEDS_APUNTA:
+              x_Esperando_en_Apunta();
+              break;
+            case INICIA_PROCESO_DISPARO:
+              previous_time=millis();
+              previous_time_solicitud=millis();
+              prende_leds=SI;
+              destello=1;
+              menu_proceso_diana=ENCIENDE_DISPARO;
+              break;
+            case ENCIENDE_DISPARO:
+              x_Enciende_Disparo_Destellos();
+              menu_proceso_diana=ESPERA_LEDS_DISPARO;
+              break;
+            case ESPERA_LEDS_DISPARO:
+              x_Espera_Leds_Disparo();
+              break;
+            case ESPERA_ENVIO_RESULTADOS:
+              actual_time_solicitud=millis();
+              if (actual_time_solicitud > (previous_time_solicitud+500))
+                {
+                  menu_proceso_diana=ENVIA_RESULTADOS;
+                  menu_transmision=INICIALIZA_TRANSMISION;
+                }   
+              break;
+            case ENVIA_RESULTADOS:
+              x_Envia_Resultados();
+              break;
+            case DATOS_ENVIADOS_OK:
+              estado_diana=APAGADO;
+              pixels.clear();
+              break;
+          } // fin switch menu_proceso_diana
         break;
 
-      case PREPARA_PAQUETE_ENVIO2:
+    }  // fin switch estado_diana
+} // FIN  loop ---------------------------------------------------
+
+void x_Enciende_Solicitud()
+{
+  if (prende_leds==SI)
+    {
+      //int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
+      pixels.setPixelColor(orden_led_ [led_inicio+1],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+2],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+3],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+4],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+5],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+6],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+7],pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(orden_led_ [led_inicio+8],pixels.Color(rojo,verde*10,azul*10));
+      pixels.show();
+      prende_leds=NO;
+    }
+}
+
+
+void x_Esperando_en_Apunta()
+{
+  frecuencia_detectada =Analisis_De_Frecuencia(); 
+  switch (frecuencia_detectada)
+    {
+      case SIN_DETECCION:
+        /* regresa a solicitud*/
+        menu_proceso_diana=INICIA_PROCESO_SOLICITUD;                   
+        break;
+      case LASER_APUNTANDO:
+        actual_time_solicitud=millis();
+        if (actual_time_solicitud > (previous_time_solicitud+50))
+          {
+            led_apunta++;
+            previous_time_solicitud=millis();
+            if (led_apunta>50)
+              {
+                led_apunta=5;
+              }
+            menu_proceso_diana=ENCIENDE_APUNTANDO;
+            prende_leds=SI;
+          }       
+        break;
+      case DISPARO_DETECTADO:
+        menu_proceso_diana=INICIA_PROCESO_DISPARO;
+        prende_leds=SI;
+        led_apunta=1;
+        previous_time=millis();
+        tiempo_final=millis();
+        break;
+
+    } //fin de switch frecuencia_detectada               
+ }
+
+  void  x_Espera_Leds_Solicitud()
+  {               
+    frecuencia_detectada =Analisis_De_Frecuencia(); 
+    // frecuencia_detectada = 0 SIN DETECCION / 1 LASER_APUNTANDO/ 2 DISPARO_DETECTADO
+    switch (frecuencia_detectada)
+      {
+        case SIN_DETECCION:
+          /* continua con la solicitud de disparo*/
+          actual_time_solicitud=millis();
+          if (actual_time_solicitud > (previous_time_solicitud+300))
+            {
+              pixels.clear();
+              led_inicio=led_inicio+8;
+              if (led_inicio>40)
+                {
+                  led_inicio=0;
+                }
+              prende_leds=SI;
+              previous_time_solicitud=millis();
+              menu_proceso_diana=ENCIENDE_SOLICITUD;
+            }                        
+          break;
+        case LASER_APUNTANDO:
+          menu_proceso_diana=INICIA_PROCESO_APUNTANDO;
+          prende_leds=SI;
+          break;             
+        case DISPARO_DETECTADO:
+          menu_proceso_diana=INICIA_PROCESO_DISPARO;
+          prende_leds=SI;
+          led_apunta=5;
+          break;
+      } //fin de switch frecuencia_detectada
+  }
+
+void x_Envia_Resultados()
+{                 
+  switch (menu_resultados)
+    {
+      case P1_INICIA:
+        /* code */
+        menu_resultados=P2_PREPARA;
+        break;
+      case P2_PREPARA:
         datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
         datos_enviados.d=datos_locales_diana.d; //diana
         datos_enviados.c=datos_locales_diana.c;   // color disparo
         datos_enviados.p=datos_locales_diana.p;
         datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
-        menu_transmision2=ENVIA_PAQUETE2;
         intentos_envio=1;
+        menu_resultados=P3_ENVIA;
         break;
-
-      case ENVIA_PAQUETE2:
-        esp_err_t result1 = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
-        if (result1 == ESP_OK) 
+      case P3_ENVIA:
+        enviar_datos=SI;
+        break;
+      case P4_PAUSA:
+        current_time=millis();
+        if (current_time>(previous_time+200))
           {
-            Serial.println("Sent with success");
-            menu_proceso_diana=DATOS_ENVIADOS_OK;
-            menu_transmision2=INICIALIZA_TRANSMISION2;
+            if (intentos_envio<4)
+              {
+                menu_resultados=P3_ENVIA;
+                intentos_envio=intentos_envio+1;
+              }
+            else // manda mensaje de error
+              {
+                pixels.clear();
+                for (int i=2;i<=6;i++)
+                  {
+                    pixels.setPixelColor(i,pixels.Color(10,0,0));
+                  }
+                pixels.show();
+                menu_proceso_diana=DATOS_ENVIADOS_OK;
+              }
           }
-        else 
-          {
-            Serial.println("Error sending the data");
-            intentos_envio++;
-            menu_transmision2=PAUSA_VEINTE2;
-            previous_time=millis();
-          }
-        break;
-
-      case  PAUSA_VEINTE2:
-        x_Espera_20Mseg();
-        break;
-
-    } // fin switch menu_transmision2
+          break;
+      } //fin switch menu_resultados
 }
-*/
 
 
 /*---------------------------------------------------------------------*/
@@ -654,7 +611,6 @@ void x_inicia_proceso_solicitud()
                   /*  contador de tiempo*/
                   previous_time=millis();
                   previous_time_solicitud=millis();
-                  menu_proceso_diana=ENCIENDE_SOLICITUD;
                   led_inicio=0;
                   prende_leds=SI;
 }
