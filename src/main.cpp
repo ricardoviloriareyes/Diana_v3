@@ -1,10 +1,3 @@
-// RECEPTOR NO 1
-// direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
-uint8_t   broadcastAddress1[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-
-//Monitor Central para regreso de resultados
-uint8_t   broadcastAddress4[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF}; 
-
 #include <Arduino.h>
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -13,6 +6,12 @@ uint8_t   broadcastAddress4[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 #include <esp_wifi.h>
 //#include <RTClib.h>
 #include <Adafruit_NeoPixel.h>
+
+// direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
+uint8_t   broadcastAddress1[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+
+//Monitor Central para regreso de resultados
+uint8_t   broadcastAddress4[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF}; 
 
 #define NO 0
 #define SI 1
@@ -28,24 +27,36 @@ ulong previous_time,           current_time;
 ulong previous_time_solicitud, actual_time_solicitud;
 ulong tiempo_inicial,          tiempo_final;
 
+// varables para envio de datos a diana
+#define INICIALIZA_TRANSMISION 1
+#define PREPARA_PAQUETE_ENVIO  2
+#define ENVIA_PAQUETE          3
+#define CONFIRMA_RECEPCION 4 
+#define PAUSA_VEINTE 5
+#define ENVIO_EXITOSO 6
+int8_t menu_transmision = INICIALIZA_TRANSMISION;
+int intentos_envio=0;
+
+#define INICIALIZA_TRANSMISION2 1
+#define PREPARA_PAQUETE_ENVIO2  2
+#define ENVIA_PAQUETE2          3
+#define CONFIRMA_RECEPCION2 4 
+#define PAUSA_VEINTE2 5
+#define ENVIO_EXITOSO 6
+int8_t menu_transmision2 = INICIALIZA_TRANSMISION;
+
+#define P1_INICIA 0
+#define P2_PREPARA 1
+#define P3_ENVIA 2
+#define P4_PAUSA 3
+int8_t menu_resultados = P1_INICIA ;
+
 
 // variables para envio de tiro a DIana
 #define LIBRE 0
 #define OCUPADO 1
 
 
-// varables para envio de datos a diana
-#define INICIALIZA_TRANSMISION 1
-#define SELECCIONA_DIANA_LIBRE 2
-#define MENU_SELECCIONA_COLOR 3
-#define PREPARA_PAQUETE_ENVIO  4
-#define ENVIA_PAQUETE          5
-#define CONFIRMA_RECEPCION_DEL_PAQUETE 6
-#define ESPERA_20MSEG_3INTENTOS 7
-#define ENVIO_EXITOSO 8
-#define LIBERA_BUZON_Y_LIMPIA_DATOS_REMITENTE 9
-int8_t menu_transmision = INICIALIZA_TRANSMISION;
-int intentos_envio=0;
 
 
 // estructura de envio de datos al compañero(peer)
@@ -75,9 +86,9 @@ void Inicia_ESP_NOW()
 {
 if (esp_now_init() != ESP_OK)
     {
-      pixels.setPixelColor(1,pixels.Color(10,0,0));
-      pixels.setPixelColor(2,pixels.Color(10,0,0));
-      pixels.setPixelColor(3,pixels.Color(10,0,0));
+      // pixels.setPixelColor(1,pixels.Color(10,0,0));
+      // pixels.setPixelColor(2,pixels.Color(10,0,0));
+      // pixels.setPixelColor(3,pixels.Color(10,0,0));
       Serial.println("Error initializing ESP-NOW");
       return;
     }
@@ -98,10 +109,10 @@ void readMacAddress()
   else 
     {
       Serial.println("Failed to read MAC address");
-      pixels.setPixelColor(1,pixels.Color(10,0,0));
-      pixels.setPixelColor(2,pixels.Color(10,0,0));
-      pixels.setPixelColor(3,pixels.Color(10,0,0));
-      pixels.setPixelColor(4,pixels.Color(10,0,0));
+      //pixels.setPixelColor(1,pixels.Color(10,0,0));
+      //pixels.setPixelColor(2,pixels.Color(10,0,0));
+      //pixels.setPixelColor(3,pixels.Color(10,0,0));
+      //pixels.setPixelColor(4,pixels.Color(10,0,0));
     }
 }
   
@@ -119,13 +130,13 @@ void Peer_Monitor_En_Linea()
   memcpy(peerInfo.peer_addr, broadcastAddress4, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
      {
-      pixels.setPixelColor(1,pixels.Color(10,0,0));
+      //pixels.setPixelColor(1,pixels.Color(10,0,0));
       Serial.println("Failed to add peer");
         return;
       }
    else
       { 
-        pixels.setPixelColor(1,pixels.Color(10,0,0));
+        //pixels.setPixelColor(1,pixels.Color(10,0,0));
         Serial.println("Add Peer Monitor OK");
 
       }
@@ -144,14 +155,14 @@ void Test_Conexion_Diana()
     esp_err_t result4 = esp_now_send(broadcastAddress4, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
     if (result4 == ESP_OK) 
      {
-      pixels.setPixelColor(1,pixels.Color(0,10,0));
-      pixels.setPixelColor(2,pixels.Color(0,10,0));
+      //pixels.setPixelColor(1,pixels.Color(0,10,0));
+      //pixels.setPixelColor(2,pixels.Color(0,10,0));
       Serial.println("Sent with success");
      }
     else 
      {
-      pixels.setPixelColor(1,pixels.Color(10,0,0));
-      pixels.setPixelColor(2,pixels.Color(10,0,0));
+      //pixels.setPixelColor(1,pixels.Color(10,0,0));
+      //pixels.setPixelColor(2,pixels.Color(10,0,0));
       Serial.println("Error sending the data");
      }
 }
@@ -186,11 +197,38 @@ int estado_diana =APAGADO;
 #define DATOS_ENVIADOS_OK 13
 int menu_proceso_diana = EN_ESPERA;
 
-
-#define SIN_SEÑAL 0
-#define APUNTANDO 1
-#define DISPARO 2
 int frecuencia_detectada =0;
+
+/* variables para analisis de frecuencia */
+ulong frecuencia_central=0;
+ulong frecuencia_apunta=0;
+ulong frecuencia_disparo=0;
+ulong frecuencia_apunta_verde=1200;
+ulong frecuencia_apunta_azul= 3000;
+ulong frecuencia_disparo_verde=2400;
+ulong frecuencia_disparo_azul =4800;
+
+
+/* ----------------- ENVIO DE DATOS -----------------------------*/
+int enviar_datos=NO;
+String success;
+// Callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) 
+{
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  if (status ==0){
+    success = "Delivery Success :)";
+  }
+  else{
+    success = "Delivery Fail :(";
+  }
+}
+
+
+
+
+
 
 /* -------------------- RECEPCION DE DATOS -----------------------*/
 // Callback when data is received
@@ -243,8 +281,8 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 
 //variables para deteccion de disparo en analisis de frecuencia
 #define SIN_DETECCION 0
-#define LASER_APUNTANDO 2
-#define DISPARO_DETECTADO 3
+#define LASER_APUNTANDO 1
+#define DISPARO_DETECTADO 2
 int8_t estado_detector = SIN_DETECCION;
 
 // definicion de io-esp32
@@ -257,18 +295,45 @@ int prende_leds=SI;
 int8_t destello =1;
 
 
-/* variables para analisis de frecuencia */
-uint16_t frecuencia_central=0;
-uint16_t frecuencia_apunta=0;
-uint16_t frecuencia_disparo=0;
-uint16_t frecuencia_apunta_verde=1200;
-uint16_t frecuencia_apunta_azul= 3000;
 
-uint16_t frecuencia_disparo_verde=2400;
-uint16_t frecuencia_disparo_azul =4800;
 
 int primer_encendido_apunta = SI;
 uint8_t led_apunta=5;
+
+int Analisis_De_Frecuencia()
+{ 
+  uint resultado=0;
+  uint16_t frecuencia_detectada=0;
+
+  // SIN DETECCION 
+  if (frecuencia_detectada<2000)  // no hace nada
+    { 
+      resultado=SIN_DETECCION;
+    }
+  if ((frecuencia_detectada>=2000)&(frecuencia_detectada<=3000))
+    {
+      resultado=LASER_APUNTANDO;
+    }
+  if ((frecuencia_detectada>=4000)&(frecuencia_detectada<=4500))
+    {
+      resultado= DISPARO_DETECTADO;
+    }
+ return resultado;
+}
+
+//declaracion de funciones
+void x_Espera_Leds_Disparo();
+int Analisis_De_Frecuencia();
+void x_inicia_proceso_solicitud();
+void x_Enciende_Apuntando();
+void x_Enciende_Disparo_Destellos();
+void x_Espera_20Mseg();
+void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
+void Test_Conexion_Diana();
+void readMacAddress();
+void Inicia_ESP_NOW();
+void Peer_Monitor_En_Linea();
+void x_Envia_Resultados();
 
 
 /* -----------------------INICIO    S E T U P --------------------------------*/
@@ -301,6 +366,7 @@ void setup()
 
   // test en linea MOnitor
   Test_Conexion_Diana();
+
 } // fin setup
 
 /* ----------------------  F I N    S E T U P -------------------------*/
@@ -308,6 +374,26 @@ void setup()
 
 void loop() 
 {
+  if (enviar_datos=SI)
+  {
+    esp_err_t result = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
+
+    if (result == ESP_OK) 
+      {
+        Serial.println("Sent with success");
+        menu_proceso_diana=DATOS_ENVIADOS_OK;
+        menu_resultados=P1_INICIA;
+      }
+    else 
+      {
+        Serial.println("Error sending the data");
+        intentos_envio++;
+        menu_resultados=P4_PAUSA;
+        previous_time=millis();
+      }
+  }
+
+
   switch (estado_diana)
     {
       case APAGADO:
@@ -380,6 +466,8 @@ void loop()
                         break;
 
                     } //fin de switch frecuencia_detectada
+                  break;
+
               case INICIA_PROCESO_APUNTANDO:
                  /*  contador de tiempo*/
                   previous_time=millis();
@@ -445,8 +533,7 @@ void loop()
 
               case ESPERA_LEDS_DISPARO:
                   x_Espera_Leds_Disparo();
-      
-                        break;
+                  break;
 
               case ESPERA_ENVIO_RESULTADOS:
                          actual_time_solicitud=millis();
@@ -458,46 +545,50 @@ void loop()
                         break;
 
               case ENVIA_RESULTADOS:
-                  switch (menu_transmision)
-                    {
-                      case INICIALIZA_TRANSMISION:
-                        /* code */
-                        menu_transmision=PREPARA_PAQUETE_ENVIO;
-                        break;
+                 // x_Envia_Resultados();
+                 switch (menu_resultados)
+                  {
+                  case P1_INICIA:
+                    /* code */
+                    menu_resultados=P2_PREPARA;
+                    break;
+                  case P2_PREPARA:
+                    datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
+                    datos_enviados.d=datos_locales_diana.d; //diana
+                    datos_enviados.c=datos_locales_diana.c;   // color disparo
+                    datos_enviados.p=datos_locales_diana.p;
+                    datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
+                    intentos_envio=1;
+                    menu_resultados=P3_ENVIA;
+                    break;
 
-                      case PREPARA_PAQUETE_ENVIO:
-                        datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
-                        datos_enviados.d=datos_locales_diana.d; //diana
-                        datos_enviados.c=datos_locales_diana.c;   // color disparo
-                        datos_enviados.p=datos_locales_diana.p;
-                        datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
-                        menu_transmision=ENVIA_PAQUETE;
-                        intentos_envio=1;
-                        break;
+                  case P3_ENVIA:
+                      enviar_datos=SI;
+                      break;
 
-                      case ENVIA_PAQUETE:
-                          esp_err_t result1 = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
-                          if (result1 == ESP_OK) 
+                  case P4_PAUSA:
+                      current_time=millis();
+                      if (current_time>(previous_time+200))
+                        {
+                          if (intentos_envio<4)
                             {
-                              Serial.println("Sent with success");
+                              menu_resultados=P3_ENVIA;
+                              intentos_envio=intentos_envio+1;
+                            }
+                          else // manda mensaje de error
+                            {
+                              pixels.clear();
+                              for (int i=2;i<=6;i++)
+                                {
+                                  pixels.setPixelColor(i,pixels.Color(10,0,0));
+                                }
+                              pixels.show();
                               menu_proceso_diana=DATOS_ENVIADOS_OK;
-                              menu_transmision=INICIALIZA_TRANSMISION;
                             }
-                          else 
-                            {
-                              Serial.println("Error sending the data");
-                              intentos_envio++;
-                              menu_transmision=ESPERA_20MSEG_3INTENTOS;
-                              previous_time=millis();
-                            }
-                          break;
-
-                      case  ESPERA_20MSEG_3INTENTOS:
-                          x_Espera_20Mseg_3Intentos();
-                          break;
-
-                    } // fin switch menu_transmision
-
+                        }
+                        break;
+                   } //fin switch menu_resultados
+                   break;
 
                 case DATOS_ENVIADOS_OK:
                      estado_diana=APAGADO;
@@ -512,23 +603,49 @@ void loop()
 } // FIN  loop ---------------------------------------------------
 
 
-int Analisis_De_Frecuencia()
-{ uint16_t frecuencia_detectada=0;
+/*
+void x_Envia_Resultados()
+{
+  switch (menu_transmision2)
+    {
+      case INICIALIZA_TRANSMISION2: 
+        menu_transmision2=PREPARA_PAQUETE_ENVIO;
+        break;
 
-  // SIN DETECCION 
-  if (frecuencia_detectada<2000)  // no hace nada
-    { 
-      return SIN_DETECCION;
-    }
-  if ((frecuencia_detectada>=2000)&(frecuencia_detectada<=3000))
-    {
-      return LASER_APUNTANDO;
-    }
-  if ((frecuencia_detectada>=4000)&(frecuencia_detectada<=4500))
-    {
-      return DISPARO_DETECTADO;
-    }
+      case PREPARA_PAQUETE_ENVIO2:
+        datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
+        datos_enviados.d=datos_locales_diana.d; //diana
+        datos_enviados.c=datos_locales_diana.c;   // color disparo
+        datos_enviados.p=datos_locales_diana.p;
+        datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
+        menu_transmision2=ENVIA_PAQUETE2;
+        intentos_envio=1;
+        break;
+
+      case ENVIA_PAQUETE2:
+        esp_err_t result1 = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
+        if (result1 == ESP_OK) 
+          {
+            Serial.println("Sent with success");
+            menu_proceso_diana=DATOS_ENVIADOS_OK;
+            menu_transmision2=INICIALIZA_TRANSMISION2;
+          }
+        else 
+          {
+            Serial.println("Error sending the data");
+            intentos_envio++;
+            menu_transmision2=PAUSA_VEINTE2;
+            previous_time=millis();
+          }
+        break;
+
+      case  PAUSA_VEINTE2:
+        x_Espera_20Mseg();
+        break;
+
+    } // fin switch menu_transmision2
 }
+*/
 
 
 /*---------------------------------------------------------------------*/
@@ -543,28 +660,9 @@ void x_inicia_proceso_solicitud()
 }
 
 /* ---------------------------------------------------------------------*/
-void x_Espera_20Mseg_3Intentos()
+void x_Espera_20Mseg()
 {
-  current_time=millis();
-  if (current_time>(previous_time+200))
-    {
-      if (intentos_envio<4)
-        {
-          menu_transmision=ENVIA_PAQUETE;
-          intentos_envio=intentos_envio+1;
-        }
-      else // manda mensaje de error
-        {
-          pixels.clear();
-          for (int i=2;i<=6;i++)
-            {
-              pixels.setPixelColor(i,pixels.Color(10,0,0));
-            }
-          pixels.show();
-          menu_transmision=INICIALIZA_TRANSMISION;
-          estado_diana=APAGADO;
-        }
-    }
+  
 }
 
 
