@@ -288,6 +288,13 @@ int8_t estado_detector = SIN_DETECCION;
 
 // definicion de io-esp32
 const int pin_leds = 2;
+const int button_wakeup =4;
+
+// variable para guardar el pulso de wakeup
+int buttonstate=0;
+
+
+// definicion de tira led
 uint8_t led_inicio=0;
 int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
 #define NUMPIXELS 46
@@ -298,26 +305,6 @@ int8_t destello =1;
 int primer_encendido_apunta = SI;
 uint8_t led_apunta=5;
 
-int Analisis_De_Frecuencia()
-{ 
-  uint resultado=0;
-  uint16_t frecuencia_detectada=0;
-
-  // SIN DETECCION 
-  if (frecuencia_detectada<2000)  // no hace nada
-    { 
-      resultado=SIN_DETECCION;
-    }
-  if ((frecuencia_detectada>=2000)&(frecuencia_detectada<=3000))
-    {
-      resultado=LASER_APUNTANDO;
-    }
-  if ((frecuencia_detectada>=4000)&(frecuencia_detectada<=4500))
-    {
-      resultado= DISPARO_DETECTADO;
-    }
- return resultado;
-}
 
 //declaracion de funciones
 void x_Espera_Leds_Disparo();
@@ -337,13 +324,39 @@ void x_Espera_Leds_Solicitud();
 void x_Esperando_en_Apunta();
 void x_Envia_Resultados();
 
+ulong tiempo_inicial_muestreo=0;
+ulong tiempo_actual_muestreo =0;
+volatile ulong pulsos=1;
+uint8_t periodo_muestreo_mseg = 20;
+ulong muestra[10]={0,0,0,0,0,0,0,0,0,0};
+ulong promedio_muestreo=0;
+uint8_t rango_actual=0;
+int ultimo_resultado=0;
+
+
+void Cuenta_Pulso()
+{
+ pulsos++;
+}
+
 
 /* -----------------------INICIO    S E T U P --------------------------------*/
 
 void setup() 
 {
+  // definicion en puerto 0 la lectura de interrupción para calculo de frecuencia 
+  attachInterrupt(2,Cuenta_Pulso,RISING);
+
   // inicia puerto de salida de leds
   pinMode (pin_leds,OUTPUT);
+  pinMode (button_wakeup,INPUT);
+
+  /* 
+  checar condicion de automatica de sleepmode
+  cuando pasen 3 minutos sin comunicacion
+  debe de ponerse en modo dormir
+  el wakeup se dara por la señal de pin button_wakeup 
+  */
 
   // inicia Neopixel strip
   pixels.begin();
@@ -358,6 +371,8 @@ void setup()
   // escribe direccion mac
   Serial.print("[DEFAULT] ESP32 Board MAC Address: ");
   readMacAddress();
+  Serial.println("MAC: "+ WiFi.macAddress());
+
 
   // Init ESP-NOW
   Inicia_ESP_NOW();
@@ -369,6 +384,9 @@ void setup()
   // test en linea MOnitor
   Test_Conexion_Diana();
 
+  // incio de medidor de tiempo muestreo
+  tiempo_inicial_muestreo=millis();
+
 } // fin setup
 
 /* ----------------------  F I N    S E T U P -------------------------*/
@@ -376,8 +394,11 @@ void setup()
 
 void loop() 
 {
-  // envio de datos activado en x_envia_resultados();
-  if (enviar_datos=SI)
+  // deteccion de frecuencia
+   frecuencia_detectada =Analisis_De_Frecuencia(); 
+
+  // envio de datos activado por  x_envia_resultados();
+  if (enviar_datos==SI)
   {
     esp_err_t result = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
     if (result == ESP_OK) 
@@ -454,7 +475,7 @@ void loop()
               break;
             case ESPERA_ENVIO_RESULTADOS:
               actual_time_solicitud=millis();
-              if (actual_time_solicitud > (previous_time_solicitud+500))
+              if ((actual_time_solicitud-previous_time_solicitud)>500)
                 {
                   menu_proceso_diana=ENVIA_RESULTADOS;
                   menu_transmision=INICIALIZA_TRANSMISION;
@@ -473,6 +494,65 @@ void loop()
     }  // fin switch estado_diana
 } // FIN  loop ---------------------------------------------------
 
+
+
+/*
+ulong tiempo_inicial_rango=0;
+ulong tiempo_final_rango =0;
+volatile ulong pulsos=1;
+uint8_t periodo_muestreo_mseg = 20;
+ulong muestreo[10]={0,0,0,0,0,0,0,0,0,0};
+ulong promedio_muestreo=0;
+uint8_t rango_actual=0;
+#define SIN_DETECCION 0
+#define LASER_APUNTANDO 1
+#define DISPARO_DETECTADO 2
+
+
+*/
+/* ----------------------------------------------------------------*/
+int Analisis_De_Frecuencia()
+{ 
+ ulong acumulado=0;
+ tiempo_actual_muestreo=millis();
+ if ((tiempo_actual_muestreo-tiempo_inicial_muestreo)>periodo_muestreo_mseg) //espacio para obtener la muestra
+  {
+    muestra[rango_actual]=pulsos; 
+    pulsos=0;
+    if (rango_actual==9)
+      { 
+        for (int i=0;i<=9;i++)
+        {
+          acumulado=acumulado+muestra[i];
+        }
+        promedio_muestreo=(int)acumulado/10;
+        rango_actual=0;
+      }
+    else
+      {
+        rango_actual++;  //cambia la muestra
+      }
+    if (rango_actual==0) // califica la frecuencia
+      { 
+        ultimo_resultado=SIN_DETECCION;
+        if  ( (promedio_muestreo>=(frecuencia_apunta-200)) && (promedio_muestreo <= (frecuencia_apunta+200) )) 
+          {
+            ultimo_resultado=LASER_APUNTANDO;
+          }
+
+        if  ( (promedio_muestreo>=(frecuencia_disparo-200)) && (promedio_muestreo <= (frecuencia_disparo+200) )) 
+          {
+            ultimo_resultado=DISPARO_DETECTADO;
+          }
+        //Serial.println("promedio_muestreo :"+String(promedio_muestreo));
+      }
+  }
+  return ultimo_resultado;
+}
+
+
+
+/*-------------------------------------------------------------------------------*/
 void x_Enciende_Solicitud()
 {
   if (prende_leds==SI)
@@ -491,10 +571,10 @@ void x_Enciende_Solicitud()
     }
 }
 
-
+/*------------------------------------------------*/
 void x_Esperando_en_Apunta()
 {
-  frecuencia_detectada =Analisis_De_Frecuencia(); 
+  //frecuencia_detectada =Analisis_De_Frecuencia(); 
   switch (frecuencia_detectada)
     {
       case SIN_DETECCION:
@@ -503,7 +583,7 @@ void x_Esperando_en_Apunta()
         break;
       case LASER_APUNTANDO:
         actual_time_solicitud=millis();
-        if (actual_time_solicitud > (previous_time_solicitud+50))
+        if ((actual_time_solicitud-previous_time_solicitud)>50)
           {
             led_apunta++;
             previous_time_solicitud=millis();
@@ -525,17 +605,17 @@ void x_Esperando_en_Apunta()
 
     } //fin de switch frecuencia_detectada               
  }
-
-  void  x_Espera_Leds_Solicitud()
+/*--------------------------------------------------*/
+void  x_Espera_Leds_Solicitud()
   {               
-    frecuencia_detectada =Analisis_De_Frecuencia(); 
+    //frecuencia_detectada =Analisis_De_Frecuencia(); 
     // frecuencia_detectada = 0 SIN DETECCION / 1 LASER_APUNTANDO/ 2 DISPARO_DETECTADO
     switch (frecuencia_detectada)
       {
         case SIN_DETECCION:
           /* continua con la solicitud de disparo*/
           actual_time_solicitud=millis();
-          if (actual_time_solicitud > (previous_time_solicitud+300))
+          if ((actual_time_solicitud-previous_time_solicitud)>300)
             {
               pixels.clear();
               led_inicio=led_inicio+8;
@@ -560,6 +640,8 @@ void x_Esperando_en_Apunta()
       } //fin de switch frecuencia_detectada
   }
 
+
+/*-----------------------------------------------*/
 void x_Envia_Resultados()
 {                 
   switch (menu_resultados)
@@ -582,7 +664,7 @@ void x_Envia_Resultados()
         break;
       case P4_PAUSA:
         current_time=millis();
-        if (current_time>(previous_time+200))
+        if ((current_time-previous_time)>200)
           {
             if (intentos_envio<4)
               {
@@ -604,29 +686,24 @@ void x_Envia_Resultados()
       } //fin switch menu_resultados
 }
 
-
 /*---------------------------------------------------------------------*/
 void x_inicia_proceso_solicitud()
 {
-                  /*  contador de tiempo*/
-                  previous_time=millis();
-                  previous_time_solicitud=millis();
-                  led_inicio=0;
-                  prende_leds=SI;
+  /*  contador de tiempo*/
+  previous_time=millis();
+  previous_time_solicitud=millis();
+  led_inicio=0;
+  prende_leds=SI;
 }
 
 /* ---------------------------------------------------------------------*/
-void x_Espera_20Mseg()
-{
-  
-}
 
 
 /* ---------------------------------------------------------------------*/
 void x_Espera_Leds_Disparo()
 {                  
   actual_time_solicitud=millis();
-  if (actual_time_solicitud > (previous_time_solicitud+50))
+  if ((actual_time_solicitud-previous_time_solicitud)>50)
     {
       destello++;
       if (destello>100)
@@ -659,21 +736,21 @@ void x_Enciende_Disparo_Destellos()
 /* ---------------------------------------------------------------------*/
 
 void x_Enciende_Apuntando()
-  {
-    if (prende_leds==SI)
-      {
-        pixels.setPixelColor(led_apunta-5,pixels.Color(0,0,0));
-        pixels.setPixelColor(led_apunta-4,pixels.Color(rojo,verde*5,azul*5));
-        pixels.setPixelColor(led_apunta-3,pixels.Color(rojo,verde*10,azul*10));
-        pixels.setPixelColor(led_apunta-2,pixels.Color(rojo,verde*15,azul*15));
-        pixels.setPixelColor(led_apunta-1,pixels.Color(rojo,verde*20,azul*20));
-        pixels.setPixelColor(led_apunta,pixels.Color(rojo,verde*25,azul*25));
-        pixels.show();
-        prende_leds=NO;
-      }
-  }
+{
+  if (prende_leds==SI)
+    {
+      pixels.setPixelColor(led_apunta-5,pixels.Color(0,0,0));
+      pixels.setPixelColor(led_apunta-4,pixels.Color(rojo,verde*5,azul*5));
+      pixels.setPixelColor(led_apunta-3,pixels.Color(rojo,verde*10,azul*10));
+      pixels.setPixelColor(led_apunta-2,pixels.Color(rojo,verde*15,azul*15));
+      pixels.setPixelColor(led_apunta-1,pixels.Color(rojo,verde*20,azul*20));
+      pixels.setPixelColor(led_apunta,pixels.Color(rojo,verde*25,azul*25));
+      pixels.show();
+      prende_leds=NO;
+    }
+}
 
-
+/*-------------------------------------------------------------*/
 
 
 /*
@@ -684,11 +761,7 @@ Programa principal Monitor
 
 
 Software de Diana
-- Estructura navegacion
-- Oficina de recepcion
-- Oficina de envio
-- Funcion de leds
-- Funcion de recepcion de disparo
+- analisis de frecuencia
 
 
 
