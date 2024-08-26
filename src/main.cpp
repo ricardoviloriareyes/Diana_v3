@@ -655,7 +655,7 @@ void x_Envia_Resultados()
         datos_enviados.d=datos_locales_diana.d; //diana
         datos_enviados.c=datos_locales_diana.c;   // color disparo
         datos_enviados.p=datos_locales_diana.p;
-        datos_enviados.tiempo=tiempo_final-tiempo_inicial; // para regresar el tiempo
+        datos_enviados.tiempo=int((tiempo_final-tiempo_inicial)*100)/100.00; // para regresar el tiempo
         intentos_envio=1;
         menu_resultados=P3_ENVIA;
         break;
