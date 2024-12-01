@@ -6,6 +6,10 @@
 #include <esp_wifi.h>
 //#include <RTClib.h>
 #include <Adafruit_NeoPixel.h>
+# include <Adafruit_BusIO_Register.h>
+# include <Adafruit_I2CDevice.h>
+# include <Adafruit_I2CRegister.h>
+# include <Adafruit_SPIDevice.h>
 
 // direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
 uint8_t   broadcastAddress1[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
