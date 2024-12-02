@@ -201,7 +201,7 @@ int estado_diana =APAGADO;
 #define DATOS_ENVIADOS_OK 13
 int menu_proceso_diana = EN_ESPERA;
 
-int frecuencia_detectada =0;
+int8_t frecuencia_detectada =0;
 
 /* variables para analisis de frecuencia */
 ulong frecuencia_central=0;
@@ -329,14 +329,16 @@ void x_Espera_Leds_Solicitud();
 void x_Esperando_en_Apunta();
 void x_Envia_Resultados();
 
-ulong tiempo_inicial_muestreo=0;
-ulong tiempo_actual_muestreo =0;
-volatile ulong pulsos=1;
-uint8_t periodo_muestreo_mseg = 20;
-ulong muestra[10]={0,0,0,0,0,0,0,0,0,0};
-ulong promedio_muestreo=0;
-uint8_t rango_actual=0;
-int ultimo_resultado=0;
+volatile unsigned long tiempo_inicial_muestreo=0;
+volatile unsigned long tiempo_actual_muestreo =0;
+int8_t pulsos=0;
+int8_t periodo_muestreo_mseg =10;
+int8_t muestra[10]={0,0,0,0,0,0,0,0,0,0};
+int8_t promedio_muestreo=0;
+int8_t rango_actual=0;
+int8_t acumulado=0;
+
+int8_t ultimo_resultado=0;
 
 
 void Cuenta_Pulso()
@@ -394,6 +396,7 @@ void setup()
 
   // incio de medidor de tiempo muestreo
   tiempo_inicial_muestreo=millis();
+  Serial.println(tiempo_inicial_muestreo);
 
 } // fin setup
 
@@ -403,7 +406,9 @@ void setup()
 void loop() 
 {
   // deteccion de frecuencia
-   frecuencia_detectada =Analisis_De_Frecuencia(); 
+   frecuencia_detectada =Analisis_De_Frecuencia();
+   //Serial.print("Frecuencia detectada :");
+   //Serial.println(frecuencia :);
 
   // envio de datos activado por  x_envia_resultados();
   if (enviar_datos==SI)
@@ -503,30 +508,27 @@ void loop()
 } // FIN  loop ---------------------------------------------------
 
 
-
-/*
-ulong tiempo_inicial_rango=0;
-ulong tiempo_final_rango =0;
-volatile ulong pulsos=1;
-uint8_t periodo_muestreo_mseg = 20;
-ulong muestreo[10]={0,0,0,0,0,0,0,0,0,0};
-ulong promedio_muestreo=0;
-uint8_t rango_actual=0;
-#define SIN_DETECCION 0
-#define LASER_APUNTANDO 1
-#define DISPARO_DETECTADO 2
-
-
-*/
 /* ----------------------------------------------------------------*/
 int Analisis_De_Frecuencia()
-{ 
- ulong acumulado=0;
- tiempo_actual_muestreo=millis();
+{
+  tiempo_actual_muestreo=millis();
+  //Serial.print(tiempo_actual_muestreo);
+  //Serial.print("-");
+ // Serial.print(tiempo_inicial_muestreo);
+  //Serial.print("= ");
+  //Serial.print(tiempo_actual_muestreo-tiempo_inicial_muestreo);
+  //Serial.println(" ");
+
  if ((tiempo_actual_muestreo-tiempo_inicial_muestreo)>periodo_muestreo_mseg) //espacio para obtener la muestra
   {
+    // asigna la cantidad de pulsos en muestra
     muestra[rango_actual]=pulsos; 
-    pulsos=0;
+
+    /*Serial.print("Muestra [ ");
+    Serial.print(rango_actual);
+    Serial.print("] = ");
+    Serial.println(pulsos);*/
+
     if (rango_actual==9)
       { 
         for (int i=0;i<=9;i++)
@@ -535,12 +537,20 @@ int Analisis_De_Frecuencia()
         }
         promedio_muestreo=(int)acumulado/10;
         rango_actual=0;
+        Serial.print("-");
+        Serial.print(promedio_muestreo);
+
       }
     else
       {
         rango_actual++;  //cambia la muestra
+        acumulado=0;
       }
-    if (rango_actual==0) // califica la frecuencia
+    tiempo_inicial_muestreo=millis();
+    pulsos=0;
+
+    // califica la frecuencia  
+    if (rango_actual==0) 
       { 
         ultimo_resultado=SIN_DETECCION;
         if  ( (promedio_muestreo>=(frecuencia_apunta-200)) && (promedio_muestreo <= (frecuencia_apunta+200) )) 
@@ -552,8 +562,9 @@ int Analisis_De_Frecuencia()
           {
             ultimo_resultado=DISPARO_DETECTADO;
           }
-        //Serial.println("promedio_muestreo :"+String(promedio_muestreo));
+       // Serial.println("promedio_muestreo :"+String(promedio_muestreo));
       }
+
   }
   return ultimo_resultado;
 }
