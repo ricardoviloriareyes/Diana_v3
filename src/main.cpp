@@ -291,8 +291,9 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 int8_t estado_detector = SIN_DETECCION;
 
 // definicion de io-esp32
-const int pin_leds = 2;
-const int button_wakeup =4;
+const int pin_pulsos = 2;  // recepcion de pulsos par calculo de frecuencia
+const int pin_leds = 16; // pin asignado de pcb del  diagrama de electronica diana 3.1
+const int button_wakeup =33;
 
 // variable para guardar el pulso de wakeup
 int buttonstate=0;
@@ -348,18 +349,21 @@ void Cuenta_Pulso()
 
 void setup() 
 {
-  // definicion en puerto 0 la lectura de interrupción para calculo de frecuencia 
-  attachInterrupt(2,Cuenta_Pulso,RISING);
+  // definicion en puerto IO16 (pin_pulsos) la lectura de interrupción para calculo de frecuencia 
+  pinMode(pin_pulsos,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(pin_pulsos),Cuenta_Pulso,RISING);
 
   // inicia puerto de salida de leds
   pinMode (pin_leds,OUTPUT);
+  digitalWrite(pin_leds,LOW);
   pinMode (button_wakeup,INPUT);
 
   /* 
   checar condicion de automatica de sleepmode
   cuando pasen 3 minutos sin comunicacion
   debe de ponerse en modo dormir
-  el wakeup se dara por la señal de pin button_wakeup 
+  el wakeup se dara por la señal de pin button_wakeup
+  1Dic2024 no esta implementado en software para la versión 3.1 aun que la electronica ya esta lista 
   */
 
   // inicia Neopixel strip
