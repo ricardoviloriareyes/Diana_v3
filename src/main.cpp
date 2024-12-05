@@ -27,9 +27,10 @@ uint8_t   broadcastAddress4[]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
           
 // variables de control de tiempo
-ulong previous_time,           current_time;
-ulong previous_time_solicitud, actual_time_solicitud;
-ulong tiempo_inicial,          tiempo_final;
+volatile unsigned long previous_time,           current_time;
+volatile unsigned long previous_time_solicitud, actual_time_solicitud;
+volatile unsigned long tiempo_inicial,          tiempo_final;
+volatile unsigned long hora_de_inicio, hora_final;
 
 // varables para envio de datos a diana
 #define INICIALIZA_TRANSMISION 1
@@ -90,9 +91,9 @@ void Inicia_ESP_NOW()
 {
 if (esp_now_init() != ESP_OK)
     {
-      // pixels.setPixelColor(1,pixels.Color(10,0,0));
-      // pixels.setPixelColor(2,pixels.Color(10,0,0));
-      // pixels.setPixelColor(3,pixels.Color(10,0,0));
+      // strip.setPixelColor(1,strip.Color(10,0,0));
+      // strip.setPixelColor(2,strip.Color(10,0,0));
+      // strip.setPixelColor(3,strip.Color(10,0,0));
       Serial.println("Error initializing ESP-NOW");
       return;
     }
@@ -113,10 +114,10 @@ void readMacAddress()
   else 
     {
       Serial.println("Failed to read MAC address");
-      //pixels.setPixelColor(1,pixels.Color(10,0,0));
-      //pixels.setPixelColor(2,pixels.Color(10,0,0));
-      //pixels.setPixelColor(3,pixels.Color(10,0,0));
-      //pixels.setPixelColor(4,pixels.Color(10,0,0));
+      //strip.setPixelColor(1,strip.Color(10,0,0));
+      //strip.setPixelColor(2,strip.Color(10,0,0));
+      //strip.setPixelColor(3,strip.Color(10,0,0));
+      //strip.setPixelColor(4,strip.Color(10,0,0));
     }
 }
   
@@ -134,13 +135,13 @@ void Peer_Monitor_En_Linea()
   memcpy(peerInfo.peer_addr, broadcastAddress4, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
      {
-      //pixels.setPixelColor(1,pixels.Color(10,0,0));
+      //strip.setPixelColor(1,strip.Color(10,0,0));
       Serial.println("Failed to add peer");
         return;
       }
    else
       { 
-        //pixels.setPixelColor(1,pixels.Color(10,0,0));
+        //strip.setPixelColor(1,strip.Color(10,0,0));
         Serial.println("Add Peer Monitor OK");
 
       }
@@ -159,14 +160,14 @@ void Test_Conexion_Diana()
     esp_err_t result4 = esp_now_send(broadcastAddress4, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
     if (result4 == ESP_OK) 
      {
-      //pixels.setPixelColor(1,pixels.Color(0,10,0));
-      //pixels.setPixelColor(2,pixels.Color(0,10,0));
+      //strip.setPixelColor(1,strip.Color(0,10,0));
+      //strip.setPixelColor(2,strip.Color(0,10,0));
       Serial.println("Sent with success");
      }
     else 
      {
-      //pixels.setPixelColor(1,pixels.Color(10,0,0));
-      //pixels.setPixelColor(2,pixels.Color(10,0,0));
+      //strip.setPixelColor(1,strip.Color(10,0,0));
+      //strip.setPixelColor(2,strip.Color(10,0,0));
       Serial.println("Error sending the data");
      }
 }
@@ -175,7 +176,7 @@ void Test_Conexion_Diana()
 
 int8_t rojo=0;
 int8_t verde=0;
-int8_t azul=0;
+int8_t azul=1;
 #define NULO 0
 int color_diana = NULO;
 #define TIEMPO_DE_RETARDO_DE_RESPUESTA 500 // 500 mseg entre termino de disparo y envio a monitor
@@ -187,7 +188,7 @@ int estado_diana =APAGADO;
 
 #define EN_ESPERA 0
 #define INICIA_CONTADOR_TIEMPO 1
-#define INICIA_PROCESO_SOLICITUD 2
+#define INICIA_TIEMPO_SOLICITUD_DISPARO 2
 #define ENCIENDE_SOLICITUD 3
 #define ESPERA_LEDS_SOLICITUD 4
 #define INICIA_PROCESO_APUNTANDO 5
@@ -204,9 +205,8 @@ int menu_proceso_diana = EN_ESPERA;
 int8_t frecuencia_detectada =0;
 
 /* variables para analisis de frecuencia */
-ulong frecuencia_central=0;
-ulong frecuencia_apunta=0;
-ulong frecuencia_disparo=0;
+ulong frecuencia_apunta=800;
+ulong frecuencia_disparo=1300;
 ulong frecuencia_apunta_verde=1200;
 ulong frecuencia_apunta_azul= 3000;
 ulong frecuencia_disparo_verde=2400;
@@ -302,8 +302,8 @@ int buttonstate=0;
 // definicion de tira led
 uint8_t led_inicio=0;
 int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
-#define NUMPIXELS 46
-Adafruit_NeoPixel pixels(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
+#define NUMPIXELS 31
+Adafruit_NeoPixel strip(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
 int prende_leds=SI;
 int8_t destello =1;
 
@@ -313,8 +313,10 @@ uint8_t led_apunta=5;
 
 //declaracion de funciones
 void x_Espera_Leds_Disparo();
-int Analisis_De_Frecuencia();
+void Analisis_De_Frecuencia2();
+void Califica_La_Frecuencia();
 void x_inicia_proceso_solicitud();
+void X_Inicia_Tiempo_Solicitud();
 void x_Enciende_Apuntando();
 void x_Enciende_Disparo_Destellos();
 void x_Espera_20Mseg();
@@ -328,17 +330,33 @@ void x_Enciende_Solicitud();
 void x_Espera_Leds_Solicitud();
 void x_Esperando_en_Apunta();
 void x_Envia_Resultados();
+void Enciende_Tira();
+void Enciende_Tira_Leds();
+void Espera_Tira_Leds();
+void Apunta_Tira_Leds();
+
+
 
 volatile unsigned long tiempo_inicial_muestreo=0;
 volatile unsigned long tiempo_actual_muestreo =0;
-int8_t pulsos=0;
-int8_t periodo_muestreo_mseg =10;
-int8_t muestra[10]={0,0,0,0,0,0,0,0,0,0};
-int8_t promedio_muestreo=0;
+volatile unsigned long tiempo_inicial_leds=0;
+volatile unsigned long tiempo_actual_leds=0;
+volatile unsigned long periodo_muestreo_mseg =10;
+volatile unsigned long pulsos=0;
+volatile unsigned long muestra[10]={0,0,0,0,0,0,0,0,0,0};
+volatile unsigned long promedio_muestreo=0;
+volatile unsigned long nueva_frecuencia=0;
 int8_t rango_actual=0;
-int8_t acumulado=0;
+volatile unsigned long acumulado=0;
+volatile unsigned long rangototal=0;
 
+int8_t se_genero_nueva_frecuencia=NO;
 int8_t ultimo_resultado=0;
+
+int8_t posicion_anterior=SIN_DETECCION;
+int8_t posicion_nueva=SIN_DETECCION;
+int8_t existe_cambio_de_posicion=SI;
+int8_t estuvo_apuntando=NO;
 
 
 void Cuenta_Pulso()
@@ -369,8 +387,13 @@ void setup()
   */
 
   // inicia Neopixel strip
-  pixels.begin();
-  pixels.clear(); // inicializa todos en off
+  strip.begin();
+  strip.show();
+  strip.setBrightness(50);
+
+  // para iniciar el flasheo de la tira
+  tiempo_inicial_leds=millis();
+
 
   // inicia comunicacion serial
   Serial.begin(115200);
@@ -398,6 +421,9 @@ void setup()
   tiempo_inicial_muestreo=millis();
   Serial.println(tiempo_inicial_muestreo);
 
+  // variables a fijar para pruebas
+  estado_diana=ENCENDIDO;
+
 } // fin setup
 
 /* ----------------------  F I N    S E T U P -------------------------*/
@@ -406,13 +432,15 @@ void setup()
 void loop() 
 {
   // deteccion de frecuencia
-   frecuencia_detectada =Analisis_De_Frecuencia();
-   //Serial.print("Frecuencia detectada :");
-   //Serial.println(frecuencia :);
+  // frecuencia_detectada =Analisis_De_Frecuencia();
+  Analisis_De_Frecuencia2();
+  Califica_La_Frecuencia();
+  Enciende_Tira ();
+
 
   // envio de datos activado por  x_envia_resultados();
   if (enviar_datos==SI)
-  {
+    {
     esp_err_t result = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
     if (result == ESP_OK) 
       {
@@ -429,9 +457,65 @@ void loop()
         previous_time=millis();
         enviar_datos=NO;
       }
+    }
+} // FIN  loop ---------------------------------------------------
+
+
+void Enciende_Tira ()
+{ 
+  tiempo_actual_leds=millis();
+  //Serial.print(tiempo_actual_leds-tiempo_inicial_leds);
+  switch (posicion_nueva)
+  {
+    case SIN_DETECCION:   // SIN_DETECCION
+      if ((tiempo_actual_leds-tiempo_inicial_leds)>200)
+        { // cambia posicion de leds
+          led_inicio=led_inicio+1;
+          //Serial.println("cambio de led :"+String(led_inicio));
+          prende_leds=SI;
+          if (led_inicio>8) { led_inicio=0;}
+          // reinicia periodo
+          tiempo_inicial_leds=millis();
+          // enciende
+          Espera_Tira_Leds();
+        }
+      break;
+    case LASER_APUNTANDO:   // LASER APUNTANDO
+      if ((tiempo_actual_leds-tiempo_inicial_leds)>40)
+        { // cambia posicion de leds
+          led_inicio=led_inicio+1;
+          //Serial.println("cambio de led apuntando :"+String(led_inicio));
+          prende_leds=SI;
+          if (led_inicio>8)
+              { led_inicio=0;
+              }
+          // reinicia periodo
+          tiempo_inicial_leds=millis();
+          // enciende
+          Apunta_Tira_Leds();
+        }
+        break;
+    case DISPARO_DETECTADO:   // DISPARO_DETECTADO
+        Serial.print("DISPARO DETECTADO : ");
+        Serial.println(nueva_frecuencia);
+        for (int i=1;i<=5;i++)
+          {
+          x_Enciende_Disparo_Destellos();
+          }
+        posicion_nueva=SIN_DETECCION;
+        break;
   }
+}
+  /* nota: se quito la opcion de validar que disparo viniera
+   de apuntar, ya que a veces  no lo detecta si el gatillo se oprime
+   muy rapido y perderia el tiro, asi que pueden hacer trampa
+   dejando el gatillo oprimido
+   */
 
 
+
+void Luces_Diana()
+{
   switch (estado_diana)
     {
       case APAGADO:
@@ -442,19 +526,28 @@ void loop()
       case ENCENDIDO:
         switch (menu_proceso_diana)
           {
+            case EN_ESPERA:
+              // entra al iniciar proceso
+              menu_proceso_diana=INICIA_CONTADOR_TIEMPO;
+              break;            
             case INICIA_CONTADOR_TIEMPO:
-              tiempo_inicial=millis();
-              menu_proceso_diana=INICIA_PROCESO_SOLICITUD;
+              //Arranca el tiempo
+              hora_de_inicio=millis();
+              menu_proceso_diana=INICIA_TIEMPO_SOLICITUD_DISPARO;
               break;
-            case INICIA_PROCESO_SOLICITUD:
-              x_inicia_proceso_solicitud();
+            case INICIA_TIEMPO_SOLICITUD_DISPARO:
+              // reinicia los contadores del tiempo total del disparo
+              X_Inicia_Tiempo_Solicitud();
               menu_proceso_diana=ENCIENDE_SOLICITUD;
               break;
             case ENCIENDE_SOLICITUD:
+              //Serial.print("-ES-");
+              prende_leds=SI;
               x_Enciende_Solicitud();
               menu_proceso_diana=ESPERA_LEDS_SOLICITUD;
               break;
             case ESPERA_LEDS_SOLICITUD:
+              //Serial.print("-SOL-");
               x_Espera_Leds_Solicitud();
               break;
             case INICIA_PROCESO_APUNTANDO:
@@ -499,75 +592,102 @@ void loop()
               break;
             case DATOS_ENVIADOS_OK:
               estado_diana=APAGADO;
-              pixels.clear();
+              strip.clear();
               break;
           } // fin switch menu_proceso_diana
         break;
 
     }  // fin switch estado_diana
-} // FIN  loop ---------------------------------------------------
+}
 
 
-/* ----------------------------------------------------------------*/
-int Analisis_De_Frecuencia()
+
+
+//------------------------------------------------------------
+void Analisis_De_Frecuencia2()
 {
   tiempo_actual_muestreo=millis();
-  //Serial.print(tiempo_actual_muestreo);
-  //Serial.print("-");
- // Serial.print(tiempo_inicial_muestreo);
-  //Serial.print("= ");
-  //Serial.print(tiempo_actual_muestreo-tiempo_inicial_muestreo);
-  //Serial.println(" ");
-
- if ((tiempo_actual_muestreo-tiempo_inicial_muestreo)>periodo_muestreo_mseg) //espacio para obtener la muestra
+  // define el rango de tiempo de cada rango de muestreo
+  if ((tiempo_actual_muestreo-tiempo_inicial_muestreo)>periodo_muestreo_mseg) //espacio para obtener la muestra
   {
-    // asigna la cantidad de pulsos en muestra
-    muestra[rango_actual]=pulsos; 
+    /*
+    La frecuencia se obtiene con:
+    10 muestra de 10 msseg cada una
+    El promedio nos da la frecuencia de 10 mseg
+    se tiene que multiplicar por 100 para sacar la muestra 
+    en frecuencia () por segundo, pero el circuito
+    tiene un divisior de decadas por lo que se tiene que multipicar
+    por 10 adicional, por eso se escribe pulsos*mil
+    */
+    
 
-    /*Serial.print("Muestra [ ");
-    Serial.print(rango_actual);
-    Serial.print("] = ");
-    Serial.println(pulsos);*/
-
-    if (rango_actual==9)
+    muestra[rango_actual]=pulsos*1000; 
+    //Serial.print(" Pulsos rango ["+String(rango_actual)+"] : ");
+    //Serial.println(pulsos*10); 
+    if (rango_actual<9)
+      { // incrementa el NO de muestra y reinicia periodo de muestreo
+        rango_actual++;  
+        tiempo_inicial_muestreo=millis();
+        pulsos=0;
+      }
+    else // igual a 9 
       { 
-        for (int i=0;i<=9;i++)
-        {
-          acumulado=acumulado+muestra[i];
-        }
+        //calcula el promedio del muestreo
+        for (int i=0;i<=9;i++)  { acumulado=acumulado+muestra[i];}
         promedio_muestreo=(int)acumulado/10;
-        rango_actual=0;
-        Serial.print("-");
-        Serial.print(promedio_muestreo);
-
-      }
-    else
-      {
-        rango_actual++;  //cambia la muestra
+        //Serial.println("Nueva frecuencia : "+String(promedio_muestreo));
+        // reasigna la frecuencia
+        nueva_frecuencia=promedio_muestreo;
+        // reinicia el acumulado y rangos
         acumulado=0;
+        rango_actual=0;
+        // habilita revision del estado de la frecuencia
+        se_genero_nueva_frecuencia=SI;
       }
-    tiempo_inicial_muestreo=millis();
-    pulsos=0;
-
-    // califica la frecuencia  
-    if (rango_actual==0) 
-      { 
-        ultimo_resultado=SIN_DETECCION;
-        if  ( (promedio_muestreo>=(frecuencia_apunta-200)) && (promedio_muestreo <= (frecuencia_apunta+200) )) 
-          {
-            ultimo_resultado=LASER_APUNTANDO;
-          }
-
-        if  ( (promedio_muestreo>=(frecuencia_disparo-200)) && (promedio_muestreo <= (frecuencia_disparo+200) )) 
-          {
-            ultimo_resultado=DISPARO_DETECTADO;
-          }
-       // Serial.println("promedio_muestreo :"+String(promedio_muestreo));
-      }
-
   }
-  return ultimo_resultado;
 }
+      
+void Califica_La_Frecuencia()
+{        
+  if (se_genero_nueva_frecuencia==SI)
+    { 
+      //Serial.println("Entro a Califica Frecuencia");
+      if (nueva_frecuencia>1200)
+       {
+        posicion_nueva=DISPARO_DETECTADO;
+        //Serial.println("Disparo detectado");
+       }
+      else
+       {
+        if (nueva_frecuencia>700)
+         {
+          posicion_nueva=LASER_APUNTANDO;
+         // Serial.println("Apuntando");
+         }
+        else
+         {
+          //Serial.println("Sin deteccion");
+          posicion_nueva=SIN_DETECCION;
+         }
+       }
+      // checa cambio de posicion de menu
+      if (posicion_anterior==posicion_nueva)
+       {
+        existe_cambio_de_posicion=NO;
+       }
+      else
+       {
+        existe_cambio_de_posicion=SI;
+        posicion_anterior=posicion_nueva;
+       }
+       se_genero_nueva_frecuencia=NO;
+    }
+}
+
+
+
+
+
 
 
 
@@ -576,33 +696,69 @@ void x_Enciende_Solicitud()
 {
   if (prende_leds==SI)
     {
+      // Serial.print("led-ON");
       //int orden_led_[40]={0,8,9,22,23,31,32,45,1,7,10,21,24,30,33,44,2,6,11,20,33,43,3,5,12,19,34,42,4,4,13,18,35,41};
-      pixels.setPixelColor(orden_led_ [led_inicio+1],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+2],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+3],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+4],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+5],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+6],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+7],pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(orden_led_ [led_inicio+8],pixels.Color(rojo,verde*10,azul*10));
-      pixels.show();
+      strip.setPixelColor(orden_led_ [led_inicio+1],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+2],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+3],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+4],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+5],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+6],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+7],strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(orden_led_ [led_inicio+8],strip.Color(rojo,verde*50,azul*50));
+      strip.show();
       prende_leds=NO;
     }
 }
 
+void Espera_Tira_Leds()
+{ 
+  if (prende_leds==SI)
+    {
+      strip.clear();
+      strip.setPixelColor(8-led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(16-led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(24-led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(32-led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.show();
+      prende_leds=NO;
+    }
+}
+
+void Apunta_Tira_Leds()
+{ 
+  if (prende_leds==SI)
+    {
+      strip.clear();
+      strip.setPixelColor(led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+1,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+2,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+8,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+9,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+10,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+16,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+17,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+18,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+24,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+25,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio+26,strip.Color(rojo,verde*50,azul*50));
+      strip.show();
+      prende_leds=NO;
+    }
+}
 /*------------------------------------------------*/
 void x_Esperando_en_Apunta()
 {
   //frecuencia_detectada =Analisis_De_Frecuencia(); 
-  switch (frecuencia_detectada)
+  switch (posicion_nueva)
     {
       case SIN_DETECCION:
         /* regresa a solicitud*/
-        menu_proceso_diana=INICIA_PROCESO_SOLICITUD;                   
+        menu_proceso_diana=INICIA_TIEMPO_SOLICITUD_DISPARO;                   
         break;
       case LASER_APUNTANDO:
         actual_time_solicitud=millis();
-        if ((actual_time_solicitud-previous_time_solicitud)>50)
+        if ((actual_time_solicitud-previous_time_solicitud)>500)
           {
             led_apunta++;
             previous_time_solicitud=millis();
@@ -627,16 +783,14 @@ void x_Esperando_en_Apunta()
 /*--------------------------------------------------*/
 void  x_Espera_Leds_Solicitud()
   {               
-    //frecuencia_detectada =Analisis_De_Frecuencia(); 
-    // frecuencia_detectada = 0 SIN DETECCION / 1 LASER_APUNTANDO/ 2 DISPARO_DETECTADO
-    switch (frecuencia_detectada)
+    switch (posicion_nueva)
       {
         case SIN_DETECCION:
           /* continua con la solicitud de disparo*/
           actual_time_solicitud=millis();
-          if ((actual_time_solicitud-previous_time_solicitud)>300)
+          if ((actual_time_solicitud-previous_time_solicitud)>2000)
             {
-              pixels.clear();
+              strip.clear();
               led_inicio=led_inicio+8;
               if (led_inicio>40)
                 {
@@ -692,12 +846,12 @@ void x_Envia_Resultados()
               }
             else // manda mensaje de error
               {
-                pixels.clear();
+                strip.clear();
                 for (int i=2;i<=6;i++)
                   {
-                    pixels.setPixelColor(i,pixels.Color(10,0,0));
+                    strip.setPixelColor(i,strip.Color(10,0,0));
                   }
-                pixels.show();
+                strip.show();
                 menu_proceso_diana=DATOS_ENVIADOS_OK;
               }
           }
@@ -706,9 +860,9 @@ void x_Envia_Resultados()
 }
 
 /*---------------------------------------------------------------------*/
-void x_inicia_proceso_solicitud()
+void X_Inicia_Tiempo_Solicitud()
 {
-  /*  contador de tiempo*/
+  /*  Inicia el contador de tiempo para el disparo*/
   previous_time=millis();
   previous_time_solicitud=millis();
   led_inicio=0;
@@ -729,7 +883,7 @@ void x_Espera_Leds_Disparo()
         {
           previous_time_solicitud=millis();
           menu_proceso_diana=ESPERA_ENVIO_RESULTADOS;
-          pixels.clear();
+          strip.clear();
         }
       menu_proceso_diana=ENCIENDE_DISPARO;
       prende_leds=SI;
@@ -738,19 +892,25 @@ void x_Espera_Leds_Disparo()
 /* ---------------------------------------------------------------------*/
 void x_Enciende_Disparo_Destellos()
 {
-  if (prende_leds==SI)
-    {
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.setPixelColor(rand()%45,pixels.Color((rand()%5)*5,(rand()%5)*5,(rand()%5)*5));
-      pixels.show();
-      prende_leds=NO;
-    }
+      strip.clear();
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      strip.show();
+      delay(50);
 }
 /* ---------------------------------------------------------------------*/
 
@@ -758,13 +918,13 @@ void x_Enciende_Apuntando()
 {
   if (prende_leds==SI)
     {
-      pixels.setPixelColor(led_apunta-5,pixels.Color(0,0,0));
-      pixels.setPixelColor(led_apunta-4,pixels.Color(rojo,verde*5,azul*5));
-      pixels.setPixelColor(led_apunta-3,pixels.Color(rojo,verde*10,azul*10));
-      pixels.setPixelColor(led_apunta-2,pixels.Color(rojo,verde*15,azul*15));
-      pixels.setPixelColor(led_apunta-1,pixels.Color(rojo,verde*20,azul*20));
-      pixels.setPixelColor(led_apunta,pixels.Color(rojo,verde*25,azul*25));
-      pixels.show();
+      strip.setPixelColor(led_apunta-5,strip.Color(0,0,0));
+      strip.setPixelColor(led_apunta-4,strip.Color(rojo,verde*5,azul*5));
+      strip.setPixelColor(led_apunta-3,strip.Color(rojo,verde*10,azul*10));
+      strip.setPixelColor(led_apunta-2,strip.Color(rojo,verde*15,azul*15));
+      strip.setPixelColor(led_apunta-1,strip.Color(rojo,verde*20,azul*20));
+      strip.setPixelColor(led_apunta,strip.Color(rojo,verde*25,azul*25));
+      strip.show();
       prende_leds=NO;
     }
 }
@@ -772,39 +932,87 @@ void x_Enciende_Apuntando()
 /*-------------------------------------------------------------*/
 
 
+
+
 /*
-Programa principal Monitor
--  Funcion de escribir a monitor
-- conexon de sistema de radio para botones
+switch (estado_diana)
+    {
+      case APAGADO:
+        break;
+      case ENCENDIDO:
+        switch (menu_proceso_diana)
+          {
+            case EN_ESPERA:
+              menu_proceso_diana=INICIA_CONTADOR_TIEMPO;
+              //Serial.print("-IniciaEspera-");
+              break;            
+            case INICIA_CONTADOR_TIEMPO:
+              //Serial.print("-IniciaContador-");
+              tiempo_inicial=millis();
+              menu_proceso_diana=INICIA_TIEMPO_SOLICITUD_DISPARO;
+              break;
+            case INICIA_TIEMPO_SOLICITUD_DISPARO:
+              // reinicia los contadores del tiempo total del disparo
+              X_Inicia_Tiempo_Solicitud();
+              menu_proceso_diana=ENCIENDE_SOLICITUD;
+              break;
+            case ENCIENDE_SOLICITUD:
+              //Serial.print("-ES-");
+              prende_leds=SI;
+              x_Enciende_Solicitud();
+              menu_proceso_diana=ESPERA_LEDS_SOLICITUD;
+              break;
+            case ESPERA_LEDS_SOLICITUD:
+              //Serial.print("-SOL-");
+              x_Espera_Leds_Solicitud();
+              break;
+            case INICIA_PROCESO_APUNTANDO:
+              //  contador de tiempo
+              previous_time=millis();
+              previous_time_solicitud=millis();
+              menu_proceso_diana=ENCIENDE_APUNTANDO;
+              prende_leds=SI;
+              led_apunta=5;
+              break;    
+            case ENCIENDE_APUNTANDO:
+              x_Enciende_Apuntando();
+              menu_proceso_diana=ESPERA_LEDS_APUNTA;
+              break;
+            case ESPERA_LEDS_APUNTA:
+              x_Esperando_en_Apunta();
+              break;
+            case INICIA_PROCESO_DISPARO:
+              previous_time=millis();
+              previous_time_solicitud=millis();
+              prende_leds=SI;
+              destello=1;
+              menu_proceso_diana=ENCIENDE_DISPARO;
+              break;
+            case ENCIENDE_DISPARO:
+              x_Enciende_Disparo_Destellos();
+              menu_proceso_diana=ESPERA_LEDS_DISPARO;
+              break;
+            case ESPERA_LEDS_DISPARO:
+              x_Espera_Leds_Disparo();
+              break;
+            case ESPERA_ENVIO_RESULTADOS:
+              actual_time_solicitud=millis();
+              if ((actual_time_solicitud-previous_time_solicitud)>500)
+                {
+                  menu_proceso_diana=ENVIA_RESULTADOS;
+                  menu_transmision=INICIALIZA_TRANSMISION;
+                }   
+              break;
+            case ENVIA_RESULTADOS:
+              x_Envia_Resultados();
+              break;
+            case DATOS_ENVIADOS_OK:
+              estado_diana=APAGADO;
+              strip.clear();
+              break;
+          } // fin switch menu_proceso_diana
+        break;
 
-
-
-Software de Diana
-- analisis de frecuencia
-
-
-
-
-Hardware tablero
-- conexon de sistema de radio para botones
-- conexion de esp con tablero y fuente
-- conexion de led en tablero
-
-
-
-
-
-Hardware Pistola
-
-
-MENSAJES DIANA (ENCIENDE LED EN LINEA SUPERIOR DE DIANA)
-VERDE =OK ROJO= FALLO 
-*   fallo de add peer 
-**   fall de prueba de envio a Monitor
-***  FALLO DE INICIALIZACIO DE ESP-NOW
-***  FALLO DE LECTURA DE LA MAC
-****** fall la transmision al Monitor con el resultado del tiempo de disparo
+    }  // fin switch estado_diana
 */
-
-
 
