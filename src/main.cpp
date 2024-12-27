@@ -229,6 +229,30 @@ volatile unsigned long tiempo_termina_tiro=0;
 int activa_envio_de_resultados=NO;
 
 
+//variables para deteccion de disparo en analisis de frecuencia
+#define SIN_DETECCION 0
+#define LASER_APUNTANDO 1
+#define DISPARO_DETECTADO 2
+//int8_t estado_detector = SIN_DETECCION;
+
+
+//----
+volatile unsigned long tiempo_inicial_muestreo=0;
+volatile unsigned long tiempo_actual_muestreo =0;
+volatile unsigned long tiempo_inicial_leds=0;
+volatile unsigned long tiempo_actual_leds=0;
+volatile unsigned long periodo_muestreo_mseg =10;
+volatile unsigned long pulsos=0;
+volatile unsigned long muestra[10]={0,0,0,0,0,0,0,0,0,0};
+volatile unsigned long promedio_muestreo=0;
+volatile unsigned long nueva_frecuencia=0;
+volatile unsigned long acumulado=0;
+int8_t rango_actual=0;
+int8_t cambio_la_frecuencia =NO;
+int8_t posicion_nueva       =SIN_DETECCION;
+int captura_tiempo_inicial=SI;
+
+
 
 /* -------------------- RECEPCION DE DATOS -----------------------*/
 // Callback when data is received
@@ -249,13 +273,15 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 
   if (datos_recibidos.t==TIRO_ACTIVO)
     { 
+      /*
       Serial.println("Estado-diana= ENCENDIDO");
       Serial.println("datos_recibidos.t ="+String(datos_recibidos.t));
       Serial.println("datos_recibidos.c ="+String(datos_recibidos.c));
       Serial.println("datos_recibidos.d ="+String(datos_recibidos.d));
       Serial.println("datos_recibidos.p ="+String(datos_recibidos.p));
       Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
-      
+      */
+
       estado_diana=ENCENDIDO;
       datos_locales_diana.t =datos_recibidos.t;
       datos_locales_diana.c =datos_recibidos.c;
@@ -263,6 +289,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       datos_locales_diana.p =datos_recibidos.p;
       datos_locales_diana.tiempo=0.00;
       no_paquete++;
+      pulsos=0;
       switch (datos_locales_diana.c)
         {
           case GREEN:
@@ -290,11 +317,6 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 
 
 
-//variables para deteccion de disparo en analisis de frecuencia
-#define SIN_DETECCION 0
-#define LASER_APUNTANDO 1
-#define DISPARO_DETECTADO 2
-//int8_t estado_detector = SIN_DETECCION;
 
 
 
@@ -327,21 +349,6 @@ void Envia_Resultados_Al_Monitor();
 int8_t case_proceso_encendido = INICIA_STANDBYE;
 
 
-//----
-volatile unsigned long tiempo_inicial_muestreo=0;
-volatile unsigned long tiempo_actual_muestreo =0;
-volatile unsigned long tiempo_inicial_leds=0;
-volatile unsigned long tiempo_actual_leds=0;
-volatile unsigned long periodo_muestreo_mseg =10;
-volatile unsigned long pulsos=0;
-volatile unsigned long muestra[10]={0,0,0,0,0,0,0,0,0,0};
-volatile unsigned long promedio_muestreo=0;
-volatile unsigned long nueva_frecuencia=0;
-volatile unsigned long acumulado=0;
-int8_t rango_actual=0;
-int8_t cambio_la_frecuencia =NO;
-int8_t posicion_nueva       =SIN_DETECCION;
-int captura_tiempo_inicial=SI;
 
 void Cuenta_Pulso()
 {
@@ -763,7 +770,7 @@ void Disparo_Tira_Leds()
       strip.setPixelColor(i,strip.Color(250,250,250));
       }
       strip.show();
-      //delay(50);
+      delay(10);
       strip.setBrightness(100);
       strip.clear();
       strip.show();
