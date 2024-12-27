@@ -21,7 +21,7 @@ uint8_t   broadcastAddress1[]={0x24,0x62,0xAB,0xDC,0xAC,0xF4};
 //4c:eb:d6:75:48:30
 
 //Monitor Central para regreso de resultados
-uint8_t   broadcastAddress4[]={0x4C,0xEB,0xD6,0x75,0x48,0x30}; 
+uint8_t   broadcastAddressMonitor[]={0x4C,0xEB,0xD6,0x75,0x48,0x30}; 
 
 #define NO 0
 #define SI 1
@@ -62,6 +62,7 @@ structura_mensaje datos_locales_diana;  // para usar en diana
 
 #define TEST 0
 #define TIRO_ACTIVO 1
+int no_paquete=1;
 
 // variable tipo esp_now_info_t para almacenar informacion del compañero
 esp_now_peer_info_t peerInfo;
@@ -88,20 +89,16 @@ void Inicia_ESP_NOW()
   Serial.println("Inicia ESPNOW");
   if (esp_now_init() != ESP_OK)
     {
-      strip.setPixelColor(1,strip.Color(100,0,0));
-      strip.setPixelColor(2,strip.Color(100,0,0));
-      strip.setPixelColor(3,strip.Color(100,0,0));
-      strip.show();
       Serial.println("Error initializing ESP-NOW");
+      strip.setPixelColor(0,strip.Color(250,0,0));
+      strip.show();
       return;
     }
   else
   {
-      strip.setPixelColor(1,strip.Color(0,100,0));
-      strip.setPixelColor(2,strip.Color(0,100,0));
-      strip.setPixelColor(3,strip.Color(1,100,0));
-      strip.show();
       Serial.println("initializing ESP-NOW  OK");
+      strip.setPixelColor(0,strip.Color(0,0,250));
+      strip.show();
   }
 }
 
@@ -120,11 +117,6 @@ void readMacAddress()
   else 
     {
       Serial.println("Failed to read MAC address");
-      strip.setPixelColor(1,strip.Color(0,0,0));
-      strip.setPixelColor(2,strip.Color(20,0,0));
-      strip.setPixelColor(3,strip.Color(20,0,0));
-      strip.setPixelColor(4,strip.Color(20,0,0));
-      strip.show();
     }
 }
 
@@ -137,17 +129,18 @@ void Peer_Monitor_En_Linea()
   // register peer1
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
-  memcpy(peerInfo.peer_addr, broadcastAddress4, 6);
+  memcpy(peerInfo.peer_addr, broadcastAddressMonitor, 6);
+  delay(500);
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
      {
-        strip.setPixelColor(1,strip.Color(100,0,0));
+        strip.setPixelColor(1,strip.Color(250,0,0));
         strip.show();
         Serial.println("Failed to add peer Monitor");
         return;
      }
    else
       { 
-        strip.setPixelColor(1,strip.Color(0,150,0));
+        strip.setPixelColor(1,strip.Color(0,0,250));
         strip.show();
         Serial.println("Add Peer Monitor OK");
 
@@ -159,24 +152,23 @@ void Test_Conexion_Diana()
 { 
   // DATOS A ENVIAR  
     datos_enviados.t=TEST;
-    datos_enviados.c=1;   //SE MANDA ROJO PARA TEST
+    datos_enviados.c=1;   //SE MANDA led_1 PARA TEST
     datos_enviados.p=0; // JUGADOR 0 NO ACTIVO
     datos_enviados.tiempo=0; // para regresar el tiempo
 
   // monitor
-    esp_err_t result4 = esp_now_send(broadcastAddress4, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
+    esp_err_t result4 = esp_now_send(broadcastAddressMonitor, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
+    delay(500);
     if (result4 == ESP_OK) 
      {
-      strip.setPixelColor(1,strip.Color(0,100,0));
-      strip.setPixelColor(2,strip.Color(0,100,0));
+      strip.setPixelColor(2,strip.Color(0,0,250));
       strip.show();
       Serial.println("TEST-Envio a Monitor OK");
      }
 
     else 
      {
-      strip.setPixelColor(1,strip.Color(100,0,0));
-      strip.setPixelColor(2,strip.Color(100,0,0));
+      strip.setPixelColor(2,strip.Color(250,0,0));
       strip.show();
       Serial.println("TEST-Error enviando a Monitor");
      }
@@ -184,9 +176,9 @@ void Test_Conexion_Diana()
 
  /* -------------VARIABLES DE RECEPCION DE DATOS---------------------------------*/
 
-int8_t rojo=0;
-int8_t verde=0;
-int8_t azul=1;
+int8_t led_2=0;
+int8_t led_1=0;
+int8_t led_3=0;
 
 
 //estado de diana
@@ -197,14 +189,14 @@ int estado_diana =APAGADO;
 
 
 /* variables para analisis de frecuencia */
-ulong frecuencia_disparo=1300;
-ulong frecuencia_apunta=800;
+ulong frecuencia_disparo=10000;
+ulong frecuencia_apunta=5000;
 
-ulong frecuencia_disparo_verde=2500;
-ulong frecuencia_apunta_verde=2000;
+ulong frecuencia_disparo_tiro_verde=1300 ; //2500;
+ulong frecuencia_apunta_tiro_verde= 800 ; // 2000;
 
-ulong frecuencia_disparo_azul =1300;
-ulong frecuencia_apunta_azul= 800;
+ulong frecuencia_disparo_tiro_azul =1300;
+ulong frecuencia_apunta_tiro_azul= 800;
 
 
 /* ----------------- ENVIO DE DATOS -----------------------------*/
@@ -216,8 +208,14 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if (status ==0){
+  if (status ==0)
+  {
     success = "Delivery Success :)";
+    // reinicia el equipo para esperar un nueva solicitud
+    //flujo_de_envio=STANDBYE;
+    //estado_diana=APAGADO;
+    //captura_tiempo_inicial=SI;
+
   }
   else{
     success = "Delivery Fail :(";
@@ -238,6 +236,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
   memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
   //informacion de longuitud de paquete
+  Serial.println("No. de paquete recibido :"+String(no_paquete));
   Serial.print("Bytes received: ");
   Serial.println(len);
  
@@ -251,28 +250,37 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   if (datos_recibidos.t==TIRO_ACTIVO)
     { 
       Serial.println("Estado-diana= ENCENDIDO");
+      Serial.println("datos_recibidos.t ="+String(datos_recibidos.t));
+      Serial.println("datos_recibidos.c ="+String(datos_recibidos.c));
+      Serial.println("datos_recibidos.d ="+String(datos_recibidos.d));
+      Serial.println("datos_recibidos.p ="+String(datos_recibidos.p));
+      Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
+      
       estado_diana=ENCENDIDO;
       datos_locales_diana.t =datos_recibidos.t;
       datos_locales_diana.c =datos_recibidos.c;
       datos_locales_diana.d =datos_recibidos.d;
       datos_locales_diana.p =datos_recibidos.p;
       datos_locales_diana.tiempo=0.00;
+      no_paquete++;
       switch (datos_locales_diana.c)
         {
           case GREEN:
-            rojo=0;
-            verde=1;
-            azul=0;
-            frecuencia_apunta=frecuencia_apunta_verde;
-            frecuencia_disparo=frecuencia_disparo_verde;
+            Serial.println("Programa color verde");
+            led_1=250;
+            led_2=0;
+            led_3=0;
+            frecuencia_apunta=frecuencia_apunta_tiro_verde;
+            frecuencia_disparo=frecuencia_disparo_tiro_verde;
             break;
 
           case BLUE:
-            rojo=0;
-            verde=0;
-            azul=1;
-            frecuencia_apunta=frecuencia_apunta_azul;
-            frecuencia_disparo=frecuencia_disparo_azul;
+            Serial.println("Programa color azul");
+            led_1=0;
+            led_2=0;
+            led_3=250;
+            frecuencia_apunta=frecuencia_apunta_tiro_azul;
+            frecuencia_disparo=frecuencia_disparo_tiro_azul;
             break;
 
         }
@@ -286,7 +294,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 #define SIN_DETECCION 0
 #define LASER_APUNTANDO 1
 #define DISPARO_DETECTADO 2
-int8_t estado_detector = SIN_DETECCION;
+//int8_t estado_detector = SIN_DETECCION;
 
 
 
@@ -309,7 +317,14 @@ void Apunta_Tira_Leds();
 void Disparo_Tira_Leds();
 void Envia_Resultados_Al_Monitor();
 
+// logica del proceso del disparo
 
+#define INICIA_STANDBYE 0
+#define INICIALIZA_TIEMPO 1
+#define MONITOREA_DISPARO 2
+#define ENVIA_RESULTADOS 3
+#define FINALIZA_REINICIA_VARIBLES 4
+int8_t case_proceso_encendido = INICIA_STANDBYE;
 
 
 //----
@@ -324,7 +339,7 @@ volatile unsigned long promedio_muestreo=0;
 volatile unsigned long nueva_frecuencia=0;
 volatile unsigned long acumulado=0;
 int8_t rango_actual=0;
-int8_t Cambio_La_Frecuencia =NO;
+int8_t cambio_la_frecuencia =NO;
 int8_t posicion_nueva       =SIN_DETECCION;
 int captura_tiempo_inicial=SI;
 
@@ -359,7 +374,7 @@ void setup()
   // inicia Neopixel strip
   strip.begin();
   strip.show();
-  strip.setBrightness(50);
+  strip.setBrightness(100);
 
   // para iniciar el flasheo de la tira
   tiempo_inicial_leds=millis();
@@ -392,12 +407,9 @@ void setup()
   //Serial.println(tiempo_inicial_muestreo);
 
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+  esp_now_register_send_cb(OnDataSent);
 
 
-
-  // variables a fijar para pruebas 
-  // SE DEBEN QUITAR CUANDO INICIE SINCRONIZACIN CON MONITOR
- // estado_diana=ENCENDIDO;
 
 } // fin setup
 
@@ -409,38 +421,93 @@ void loop()
   switch (estado_diana)
   {
     case APAGADO:
+      //Serial.print("-");
       /* code */
       break;
-    case ENCENDIDO:  // se habiita al recibir solicitud
-      // inicia el tiempo del  disparo
-      if (captura_tiempo_inicial==SI)
+
+    case ENCENDIDO:  
+        switch (case_proceso_encendido)
         {
-          tiempo_inicia_tiro=millis(); // incia tiempo del tiro
-          Serial.println("Contador inicial (mseg): "+String(tiempo_inicia_tiro));
-          captura_tiempo_inicial=NO;
+            case INICIA_STANDBYE:
+                /* code */
+                case_proceso_encendido=INICIALIZA_TIEMPO;
+                break;
+            case INICIALIZA_TIEMPO:
+                tiempo_inicia_tiro=millis(); // incia tiempo del tiro
+                tiempo_inicial_leds=millis();
+                strip.clear();
+                Serial.println("Contador inicial (mseg): "+String(tiempo_inicia_tiro));
+                case_proceso_encendido=MONITOREA_DISPARO;
+                break;
+            case MONITOREA_DISPARO:
+                Analisis_De_Frecuencia2();
+                Califica_La_Frecuencia();
+                Enciende_Tira ();
+                if (posicion_nueva==DISPARO_DETECTADO) //posicion nueva es modificado en califica frecuencia
+                {
+                  Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
+                  case_proceso_encendido=ENVIA_RESULTADOS;
+                  activa_envio_de_resultados=SI;
+                  flujo_de_envio=PREPARA_PAQUETE_ENVIO;
+                  posicion_nueva=SIN_DETECCION;
+
+                }
+                break;
+            case ENVIA_RESULTADOS:
+                Envia_Resultados_Al_Monitor();
+              break;
+            case FINALIZA_REINICIA_VARIBLES:
+                  // finaliza envio
+                  enviar_datos=NO;
+                  estado_diana=APAGADO;
+                  pulsos=0;
+                  captura_tiempo_inicial=SI;;
+                  flujo_de_envio=STANDBYE;
+
+                  // reinicia varibles de menus
+                  case_proceso_encendido = INICIA_STANDBYE;
+                  prende_leds=SI;
+                  led_inicio=0;
+
+                  // tiempo de duracion del tiro
+                  tiempo_inicia_tiro=0;
+                  tiempo_termina_tiro=0;
+                  activa_envio_de_resultados=NO;
+
+                  //inicializa variables de freceuncia
+                  rango_actual=0;
+                  cambio_la_frecuencia =NO;
+                  posicion_nueva       =SIN_DETECCION;
+                  captura_tiempo_inicial=SI;
+                  promedio_muestreo=0;
+                  nueva_frecuencia=0;
+                  acumulado=0;
+
+                  // reinicia el acumulado y rangos
+                  frecuencia_disparo=10000;
+                  frecuencia_apunta=5000;
+                  int i;
+                  for (i=0; i<=9;++i)
+                  {
+                    muestra[i]=0;
+                  }
+              break;
+            default:
+              break;
         }
-      // proceso durante el disparo
-      if (activa_envio_de_resultados==NO)
-        {
-          Analisis_De_Frecuencia2();
-          Califica_La_Frecuencia();
-          Enciende_Tira ();
-        }
-      else
-        {
-         Envia_Resultados_Al_Monitor();
-        }
-      // Reliza el envio de resultados,se deja a este nivel por requerimiento de ESPNOW
+    
+   
+      // ENVIO DE RESULTADOS solicitado en califica la frecuencia
+      //,se deja a este nivel por requerimiento de ESPNOW
       if (enviar_datos==SI) // se habilita en Envia_resultados_al_monitor/ENVIA_PAQUETE 
         {
-          esp_err_t result = esp_now_send(broadcastAddress4,(uint8_t *) &datos_enviados,sizeof(structura_mensaje));         
+          esp_err_t result = esp_now_send(broadcastAddressMonitor,(uint8_t *) &datos_enviados,sizeof(structura_mensaje)); 
+          delay(500);        
           if (result == ESP_OK) 
             {
+              case_proceso_encendido=FINALIZA_REINICIA_VARIBLES;
               Serial.println("Envio OK, intento : "+String(intentos_envio));
               Serial.println("Tiempo disparo (seg)   : "+String(datos_enviados.tiempo));
-              enviar_datos=NO;
-              estado_diana=APAGADO;
-              captura_tiempo_inicial=NO;
               strip.clear();
               strip.show();
             }
@@ -499,7 +566,7 @@ void Envia_Resultados_Al_Monitor()
                 estado_diana=APAGADO;
                 captura_tiempo_inicial=NO;
                 Serial.println("NO SE PUDO MANDAR INFORMACION !");
-                delay(3000);
+                //delay(500);
               }
           }
           break;
@@ -517,7 +584,7 @@ void Enciende_Tira ()
   switch (posicion_nueva)
   {
     case SIN_DETECCION:   // SIN_DETECCION
-      if ((tiempo_actual_leds-tiempo_inicial_leds)>200)
+      if ((tiempo_actual_leds-tiempo_inicial_leds)>100)
         { // cambia posicion de leds
           led_inicio=led_inicio+1;
           //Serial.println("cambio de led :"+String(led_inicio));
@@ -530,7 +597,7 @@ void Enciende_Tira ()
         }
       break;
     case LASER_APUNTANDO:   // LASER APUNTANDO
-      if ((tiempo_actual_leds-tiempo_inicial_leds)>40)
+      if ((tiempo_actual_leds-tiempo_inicial_leds)>30)
         { // cambia posicion de leds
           led_inicio=led_inicio+1;
           //Serial.println("cambio de led apuntando :"+String(led_inicio));
@@ -552,7 +619,6 @@ void Enciende_Tira ()
           {
           Disparo_Tira_Leds();
           }
-        posicion_nueva=SIN_DETECCION;
         break;
   }
 
@@ -603,7 +669,7 @@ void Analisis_De_Frecuencia2()
         acumulado=0;
         rango_actual=0;
         // habilita revision del estado de la frecuencia
-        Cambio_La_Frecuencia=SI;
+        cambio_la_frecuencia=SI;
       }
   }
 }
@@ -611,18 +677,19 @@ void Analisis_De_Frecuencia2()
 /* ----------------------------------------------------- */
 void Califica_La_Frecuencia()
 {        
-  if (Cambio_La_Frecuencia==SI)
+  if (cambio_la_frecuencia==SI)
     { 
       //Serial.println("Entro a Califica Frecuencia");
       // entre freceuncia de disparo y disparo+500
-      if ((nueva_frecuencia>frecuencia_disparo)&&(nueva_frecuencia<frecuencia_disparo+500)) // rojo 1300
+      if ((nueva_frecuencia>frecuencia_disparo)&&(nueva_frecuencia<frecuencia_disparo+500)) // led_1 1300
        {
         posicion_nueva=DISPARO_DETECTADO;
-        //Serial.println("Disparo detectado");
+        Serial.println("Disparo detectado");
 
         // prepara variables para envio de datos a Monitor
         activa_envio_de_resultados=SI;
         flujo_de_envio=PREPARA_PAQUETE_ENVIO;
+        case_proceso_encendido=ENVIA_RESULTADOS;
 
         // marca el tiempo final del tiro
         tiempo_termina_tiro=millis();
@@ -630,7 +697,7 @@ void Califica_La_Frecuencia()
        }
       else
        {
-        if ((nueva_frecuencia>frecuencia_apunta)&&(nueva_frecuencia>frecuencia_apunta)) // rojo 700
+        if ((nueva_frecuencia>frecuencia_apunta)&&(nueva_frecuencia>frecuencia_apunta)) // led_1 700
          {
           posicion_nueva=LASER_APUNTANDO;
          // Serial.println("Apuntando");
@@ -642,7 +709,7 @@ void Califica_La_Frecuencia()
          }
        }
        //Se deshabilita la calificacion
-      Cambio_La_Frecuencia=NO;
+      cambio_la_frecuencia=NO;
     }
 }
 
@@ -652,12 +719,12 @@ void Califica_La_Frecuencia()
 void Espera_Tira_Leds()
 { 
   if (prende_leds==SI)
-    {
+    { 
       strip.clear();
-      strip.setPixelColor(8-led_inicio,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(16-led_inicio,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(24-led_inicio,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(32-led_inicio,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(8-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(16-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(24-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(32-led_inicio,strip.Color(led_1,led_2,led_3));
       strip.show();
       prende_leds=NO;
     }
@@ -669,18 +736,18 @@ void Apunta_Tira_Leds()
   if (prende_leds==SI)
     {
       strip.clear();
-      strip.setPixelColor(led_inicio,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+1,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+2,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+8,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+9,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+10,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+16,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+17,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+18,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+24,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+25,strip.Color(rojo,verde*50,azul*50));
-      strip.setPixelColor(led_inicio+26,strip.Color(rojo,verde*50,azul*50));
+      strip.setPixelColor(led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+1,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+2,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+8,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+9,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+10,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+16,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+17,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+18,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+24,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+25,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+26,strip.Color(led_1,led_2,led_3));
       strip.show();
       prende_leds=NO;
     }
@@ -688,27 +755,19 @@ void Apunta_Tira_Leds()
 
 /* ---------------------------------------------------------------------*/
 void Disparo_Tira_Leds()
-{
+{     int i;
+      strip.setBrightness(250);
       strip.clear();
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
-      strip.setPixelColor(rand()%32,strip.Color((rand()%5)*50,(rand()%5)*50,(rand()%5)*50));
+      for(i=0;i<=16;i++)
+      {
+      strip.setPixelColor(i,strip.Color(250,250,250));
+      }
       strip.show();
-      delay(50);
+      //delay(50);
+      strip.setBrightness(100);
+      strip.clear();
+      strip.show();
+     
+
 }
-
-
 
