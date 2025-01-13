@@ -62,6 +62,8 @@ structura_mensaje datos_locales_diana;  // para usar en diana
 
 #define TEST 0
 #define TIRO_ACTIVO 1
+#define READY_JUGADOR 2
+int tipo_tiro_recibido= TIRO_ACTIVO;
 int no_paquete=1;
 
 // variable tipo esp_now_info_t para almacenar informacion del compañero
@@ -271,16 +273,19 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   
   Serial.println("Tiro activo = "+String(datos_recibidos.t));
 
-  if (datos_recibidos.t==TIRO_ACTIVO)
+  // se guada tipo de tiro recibido para validar el rady de loc jugadores de contadores descendentes
+  tipo_tiro_recibido=datos_recibidos.t;
+
+  // SE REGRESA JUGADOR READY PARA EVITAR ACUMULAR TIROS EN JUGADOR
+
+  if (datos_recibidos.t>=TIRO_ACTIVO)  // JUGADOR READY =2 TIRO ACTIVO =1
     { 
-      /*
       Serial.println("Estado-diana= ENCENDIDO");
       Serial.println("datos_recibidos.t ="+String(datos_recibidos.t));
       Serial.println("datos_recibidos.c ="+String(datos_recibidos.c));
       Serial.println("datos_recibidos.d ="+String(datos_recibidos.d));
       Serial.println("datos_recibidos.p ="+String(datos_recibidos.p));
       Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
-      */
 
       estado_diana=ENCENDIDO;
       datos_locales_diana.t =datos_recibidos.t;
@@ -534,7 +539,8 @@ void loop()
 
 
 /*-----------------------------------------------*/
-void Envia_Resultados_Al_Monitor()
+void 
+Envia_Resultados_Al_Monitor()
 {                 
   switch (flujo_de_envio)
     {
@@ -543,6 +549,8 @@ void Envia_Resultados_Al_Monitor()
         break;
       case PREPARA_PAQUETE_ENVIO:
         datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
+        // regresa el tipo del tiro recibido
+        datos_enviados.t=tipo_tiro_recibido;
         datos_enviados.d=datos_locales_diana.d; //diana
         datos_enviados.c=datos_locales_diana.c;   // color disparo
         datos_enviados.p=datos_locales_diana.p;
