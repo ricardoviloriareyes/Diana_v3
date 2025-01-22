@@ -11,7 +11,14 @@
 # include <Adafruit_I2CRegister.h>
 # include <Adafruit_SPIDevice.h>
 
+/*
+ED-890-OK 
+ERROR DIANA 890 -22ene2025
+- se adiciona el numero de paquete al paquete enviado
+- se pone luz roja de disponible en equipo en envio exitoso
+- se corren pruebas de velocidad y se comporta estable
 
+*/
 //24:62:AB:DC:AC:F4
 
 // direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
@@ -43,11 +50,20 @@ volatile unsigned long previous_time_reenvio,current_time_reenvio;
 int intentos_envio=0;
 int8_t flujo_de_envio = STANDBYE;
 
+// logica del proceso del disparo
+
+#define INICIA_STANDBYE 0
+#define INICIALIZA_TIEMPO 1
+#define MONITOREA_DISPARO 2
+#define ENVIA_RESULTADOS 3
+#define FINALIZA_REINICIA_VARIBLES 4
+int8_t case_proceso_encendido = INICIA_STANDBYE;
 
 
 // estructura de envio de datos al compañero(peer)
 typedef struct structura_mensaje
 {
+int n; //Paquete
 int t; //test
 int d; //diana
 int c; //color
@@ -64,7 +80,7 @@ structura_mensaje datos_locales_diana;  // para usar en diana
 #define TIRO_ACTIVO 1
 #define READY_JUGADOR 2
 int tipo_tiro_recibido= TIRO_ACTIVO;
-int no_paquete=1;
+int no_paquete=2000;
 
 // variable tipo esp_now_info_t para almacenar informacion del compañero
 esp_now_peer_info_t peerInfo;
@@ -149,10 +165,15 @@ void Peer_Monitor_En_Linea()
       }
 }
 
+
 /* ------------------PASO 3 PRUEBA DE CONEXION ---------------------------------------------------*/
 void Test_Conexion_Diana()
 { 
   // DATOS A ENVIAR  
+    if (no_paquete>=2101)
+      {no_paquete=2000;}
+
+    datos_enviados.n=no_paquete;
     datos_enviados.t=TEST;
     datos_enviados.c=1;   //SE MANDA led_1 PARA TEST
     datos_enviados.p=0; // JUGADOR 0 NO ACTIVO
@@ -186,7 +207,7 @@ int8_t led_3=0;
 //estado de diana
 #define APAGADO 0
 #define ENCENDIDO 1
-int estado_diana =APAGADO;
+int case_estado_diana =APAGADO;
 
 
 
@@ -205,9 +226,11 @@ ulong frecuencia_apunta_tiro_azul= 800;
 int enviar_datos=NO;
 String success;
 
+
 // Callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) 
 {
+  delay(250);
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
   if (status ==0)
@@ -215,11 +238,12 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
     success = "Delivery Success :)";
     // reinicia el equipo para esperar un nueva solicitud
     //flujo_de_envio=STANDBYE;
-    //estado_diana=APAGADO;
+    //case_proceso_encendido = INICIA_STANDBYE;
+    //case_estado_diana=APAGADO;
     //captura_tiempo_inicial=SI;
-
   }
-  else{
+  else
+  {
     success = "Delivery Fail :(";
   }
 }
@@ -280,14 +304,15 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 
   if (datos_recibidos.t>=TIRO_ACTIVO)  // JUGADOR READY =2 TIRO ACTIVO =1
     { 
-      Serial.println("Estado-diana= ENCENDIDO");
-      Serial.println("datos_recibidos.t ="+String(datos_recibidos.t));
-      Serial.println("datos_recibidos.c ="+String(datos_recibidos.c));
-      Serial.println("datos_recibidos.d ="+String(datos_recibidos.d));
-      Serial.println("datos_recibidos.p ="+String(datos_recibidos.p));
-      Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
+      Serial.println("RECEPCION PAQUETE"+String(datos_recibidos.n));
+      //Serial.println("datos_recibidos.no_paquete ="+String(datos_recibidos.n));
+      Serial.println("datos_recibidos.tpo_tiro ="+String(datos_recibidos.t));
+      //Serial.println("datos_recibidos.color ="+String(datos_recibidos.c));
+      //Serial.println("datos_recibidos.diana ="+String(datos_recibidos.d));
+      //Serial.println("datos_recibidos.propietario ="+String(datos_recibidos.p));
+      //Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
 
-      estado_diana=ENCENDIDO;
+      datos_locales_diana.n= datos_recibidos.n;
       datos_locales_diana.t =datos_recibidos.t;
       datos_locales_diana.c =datos_recibidos.c;
       datos_locales_diana.d =datos_recibidos.d;
@@ -298,7 +323,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       switch (datos_locales_diana.c)
         {
           case GREEN:
-            Serial.println("Programa color verde");
+            //Serial.println("Programa color verde");
             led_1=250;
             led_2=0;
             led_3=0;
@@ -307,7 +332,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
             break;
 
           case BLUE:
-            Serial.println("Programa color azul");
+            //Serial.println("Programa color azul");
             led_1=0;
             led_2=0;
             led_3=250;
@@ -316,6 +341,10 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
             break;
 
         }
+      case_estado_diana=ENCENDIDO;
+      Serial.println("Estado-diana= ENCENDIDO");
+
+
     }
 }
 
@@ -344,15 +373,9 @@ void Apunta_Tira_Leds();
 void Disparo_Tira_Leds();
 void Envia_Resultados_Al_Monitor();
 
-// logica del proceso del disparo
 
-#define INICIA_STANDBYE 0
-#define INICIALIZA_TIEMPO 1
-#define MONITOREA_DISPARO 2
-#define ENVIA_RESULTADOS 3
-#define FINALIZA_REINICIA_VARIBLES 4
-int8_t case_proceso_encendido = INICIA_STANDBYE;
 
+int i;
 
 
 void Cuenta_Pulso()
@@ -430,48 +453,94 @@ void setup()
 /* ------------------------inicio loop ----------------------------*/
 void loop() 
 { 
-  switch (estado_diana)
+  switch (case_estado_diana)
   {
     case APAGADO:
-      //Serial.print("-");
+      //Serial.print(".");
       /* code */
       break;
 
-    case ENCENDIDO:  
-        switch (case_proceso_encendido)
+    case ENCENDIDO:
+      //valida di hay datos a enviar
+      if (enviar_datos==SI) // se habilita en Envia_resultados_al_monitor/ENVIA_PAQUETE 
         {
-            case INICIA_STANDBYE:
-                /* code */
-                case_proceso_encendido=INICIALIZA_TIEMPO;
-                break;
-            case INICIALIZA_TIEMPO:
-                tiempo_inicia_tiro=millis(); // incia tiempo del tiro
-                tiempo_inicial_leds=millis();
-                strip.clear();
-                Serial.println("Contador inicial (mseg): "+String(tiempo_inicia_tiro));
-                case_proceso_encendido=MONITOREA_DISPARO;
-                break;
-            case MONITOREA_DISPARO:
-                Analisis_De_Frecuencia2();
-                Califica_La_Frecuencia();
-                Enciende_Tira ();
-                if (posicion_nueva==DISPARO_DETECTADO) //posicion nueva es modificado en califica frecuencia
-                {
-                  Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
-                  case_proceso_encendido=ENVIA_RESULTADOS;
-                  activa_envio_de_resultados=SI;
-                  flujo_de_envio=PREPARA_PAQUETE_ENVIO;
-                  posicion_nueva=SIN_DETECCION;
-
+          Serial.println("ENVIO PAQUETE :"+String(datos_enviados.n));
+          esp_err_t result = esp_now_send(broadcastAddressMonitor,(uint8_t *) &datos_enviados,sizeof(structura_mensaje)); 
+          delay(250);        
+          if (result == ESP_OK) 
+            {
+              case_proceso_encendido=FINALIZA_REINICIA_VARIBLES;
+              Serial.println("Envio Paquete OK, intento : "+String(intentos_envio));
+              Serial.println("Tiempo disparo (seg)   : "+String(datos_enviados.tiempo));
+              enviar_datos=NO;
+              strip.clear();
+              strip.show();
+              for (i=0; i<=3;++i)
+                {strip.setPixelColor(i,strip.Color(0,250,0));
                 }
-                break;
+              strip.show();
+              //890
+
+            }
+          else 
+            {
+              Serial.println("Error envio : "+String(intentos_envio));
+              intentos_envio++;
+              flujo_de_envio=PAUSA_REENVIO;
+
+              strip.clear();
+              strip.show();
+              strip.setPixelColor(1,strip.Color(0,250,0));
+              strip.setPixelColor(1,strip.Color(1,250,0));
+              strip.setPixelColor(1,strip.Color(2,250,0));
+              strip.show();
+              previous_time_reenvio=millis();
+            }
+            Serial.println("");
+            Serial.println("");
+        }
+      // proceso encendido
+      switch (case_proceso_encendido)
+        {
+            case INICIA_STANDBYE:          
+                  Serial.println("reinicia frecuencias");
+                  for (i=0; i<=9;++i)
+                  {
+                    muestra[i]=0;
+                  }
+                 case_proceso_encendido=INICIALIZA_TIEMPO;
+                 break;
+
+            case INICIALIZA_TIEMPO:
+                  tiempo_inicia_tiro=millis(); // incia tiempo del tiro
+                  tiempo_inicial_leds=millis();
+                  strip.clear();
+                  Serial.println("Inicializa tiempo (mseg): "+String(tiempo_inicia_tiro));
+                  case_proceso_encendido=MONITOREA_DISPARO;
+                  break;
+
+            case MONITOREA_DISPARO:
+                  Analisis_De_Frecuencia2();
+                  Califica_La_Frecuencia();
+                  Enciende_Tira ();
+                  if (posicion_nueva==DISPARO_DETECTADO) //posicion nueva es modificado en califica frecuencia
+                  {
+                    Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
+                    case_proceso_encendido=ENVIA_RESULTADOS;
+                    activa_envio_de_resultados=SI;
+                    flujo_de_envio=PREPARA_PAQUETE_ENVIO;
+                    posicion_nueva=SIN_DETECCION;
+                  }
+                  break;
+
             case ENVIA_RESULTADOS:
-                Envia_Resultados_Al_Monitor();
-              break;
+                  Envia_Resultados_Al_Monitor();
+                  break;
+
             case FINALIZA_REINICIA_VARIBLES:
                   // finaliza envio
-                  enviar_datos=NO;
-                  estado_diana=APAGADO;
+                  Serial.println("APAGA DIANA");
+                  case_estado_diana=APAGADO;
                   pulsos=0;
                   captura_tiempo_inicial=SI;;
                   flujo_de_envio=STANDBYE;
@@ -498,41 +567,11 @@ void loop()
                   // reinicia el acumulado y rangos
                   frecuencia_disparo=10000;
                   frecuencia_apunta=5000;
-                  int i;
-                  for (i=0; i<=9;++i)
-                  {
-                    muestra[i]=0;
-                  }
-              break;
-            default:
-              break;
-        }
-    
-   
-      // ENVIO DE RESULTADOS solicitado en califica la frecuencia
-      //,se deja a este nivel por requerimiento de ESPNOW
-      if (enviar_datos==SI) // se habilita en Envia_resultados_al_monitor/ENVIA_PAQUETE 
-        {
-          esp_err_t result = esp_now_send(broadcastAddressMonitor,(uint8_t *) &datos_enviados,sizeof(structura_mensaje)); 
-          delay(500);        
-          if (result == ESP_OK) 
-            {
-              case_proceso_encendido=FINALIZA_REINICIA_VARIBLES;
-              Serial.println("Envio OK, intento : "+String(intentos_envio));
-              Serial.println("Tiempo disparo (seg)   : "+String(datos_enviados.tiempo));
-              strip.clear();
-              strip.show();
-            }
-          else 
-            {
-              Serial.println("Error envio : "+String(intentos_envio));
-              intentos_envio++;
-              flujo_de_envio=PAUSA_REENVIO;
-              previous_time_reenvio=millis();
-            }
-        }
+                  break;
+
+        } //fin case case_proceso_encendido
       break;
-  } // fin de switch estado_diana
+  } // fin de switch case_estado_diana
 }
 // FIN  loop ---------------------------------------------------
 
@@ -541,13 +580,14 @@ void loop()
 /*-----------------------------------------------*/
 void 
 Envia_Resultados_Al_Monitor()
-{                 
+{ Serial.println("Envia resultados al monitor") ;              
   switch (flujo_de_envio)
     {
       case STANDBYE:
         /* solo espera */
         break;
       case PREPARA_PAQUETE_ENVIO:
+        datos_enviados.n =datos_locales_diana.n;
         datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
         // regresa el tipo del tiro recibido
         datos_enviados.t=tipo_tiro_recibido;
@@ -564,7 +604,7 @@ Envia_Resultados_Al_Monitor()
         break;
       case PAUSA_REENVIO:
         current_time_reenvio=millis();
-        if ((current_time_reenvio-previous_time_reenvio)>200)
+        if ((current_time_reenvio-previous_time_reenvio)>250)
           {
             if (intentos_envio<4)
               {
@@ -575,13 +615,12 @@ Envia_Resultados_Al_Monitor()
                 strip.clear();
                 for (int i=2;i<=32;i++)
                   {
-                    strip.setPixelColor(i,strip.Color(50,0,0));
+                    strip.setPixelColor(i,strip.Color(0,250,0));
                   }
                 strip.show();
-                estado_diana=APAGADO;
+                Serial.println("APAGA DIANA en PAUSA REENVIO");
+                case_estado_diana=APAGADO;
                 captura_tiempo_inicial=NO;
-                Serial.println("NO SE PUDO MANDAR INFORMACION !");
-                //delay(500);
               }
           }
           break;
@@ -715,7 +754,7 @@ void Califica_La_Frecuencia()
         if ((nueva_frecuencia>frecuencia_apunta)&&(nueva_frecuencia>frecuencia_apunta)) // led_1 700
          {
           posicion_nueva=LASER_APUNTANDO;
-         // Serial.println("Apuntando");
+          Serial.println("Apuntando");
          }
         else
          {
