@@ -12,6 +12,10 @@
 # include <Adafruit_SPIDevice.h>
 
 /*
+
+CD-001 2 febrero 2025
+Integracion de  figuras
+
 ED-890-OK 
 ERROR DIANA 890 -22ene2025
 - se adiciona el numero de paquete al paquete enviado
@@ -21,6 +25,7 @@ ERROR DIANA 890 -22ene2025
 */
 //24:62:AB:DC:AC:F4
 
+
 // direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
 uint8_t   broadcastAddress1[]={0x24,0x62,0xAB,0xDC,0xAC,0xF4};
 
@@ -29,6 +34,95 @@ uint8_t   broadcastAddress1[]={0x24,0x62,0xAB,0xDC,0xAC,0xF4};
 
 //Monitor Central para regreso de resultados
 uint8_t   broadcastAddressMonitor[]={0x4C,0xEB,0xD6,0x75,0x48,0x30}; 
+
+
+// informacion para definicion de colores solamente,
+/*
+const uint16_t colors_global[] = 
+  { 
+     matrix_arriba.Color(150,150,150),
+
+     matrix_arriba.Color(255,50,  0 ), 
+     matrix_arriba.Color( 0, 255,  0 ),
+     matrix_arriba.Color( 0,   0, 255),
+     matrix_arriba.Color( 186, 126,  66),
+     matrix_arriba.Color(255,92,0),
+ 
+  };
+
+// Colores del texto en tablero
+#define WHITE 0
+#define RED   1
+#define GREEN 2
+#define BLUE  3
+#define BLUE_LIGHT 4
+#define ORANGE 5
+
+
+entra en tiro, se revisa si que tiene que mostrar
+si muestra numeros, entonces se inicia figuras=numeros
+ciclo=1, se selecciona el numero
+cada numero debe tener diferentes colores para cada ciclo
+al terminar un ciclo debe regresar a uno hasta detectar el apunta
+en apunta la reglon 5 parpadea aleatorio y mucho mas rapido y puede ser el ciclo doble de rapido
+CUANDO LLEGA SE SELECCIONA LA FIGURA A MOSTRAR
+NUMERO DE CICLOS A MOSTRAR SEGUN LA FIGURA
+
+
+AL LLEGAR EL TIRO RECIBE EL COLOR, LA FIGURA Y EL NUMERO DE TIRO
+
+AL ENTRAR EL DESPLIEGUE SE REVISA:
+
+LA FIGURA
+    FIGURA SPACEINVADER
+
+    FIGURA NUMERO
+           SE ASIGNAN MATRICES PARA CICLOS
+              1,2,3,4,5
+           CASE CICLO
+                1. SE MUESTRA MATRIZ AGINADA
+                   FOR  DE 0 A 40
+                   {
+                   se asgina  color para led
+                        {
+                          black l1=0, l2=0,l3=0;
+                          white  led1=255 led2=255 led3255;
+                        }
+  set.pixelcolor (pixel,led1,led2,led3);
+                      
+                   SE ASIGNA COLOR}
+                   
+                2: MATRIZ ASIGNADA
+                3: MATRIZ ASIGNADA
+                4. MATRIZ ASIGNADA
+                5: MATRIZ ASIGNADA
+
+
+
+
+do case figura
+   
+   numero
+          do case numero_mostrado
+             UNO
+             MATRIZMOSTRAR=MATRIZSELECCIONADA A LA RECEPCION
+
+
+for pixel=0 a 39
+{
+  do case color
+    {
+            black l1=0, l2=0,l3=0;
+            white  led1=255 led2=255 led3255;
+    }
+  set.pixelcolor (pixel,led1,led2,led3);
+
+
+}
+
+
+*/
+
 
 #define NO 0
 #define SI 1
@@ -59,16 +153,80 @@ int8_t flujo_de_envio = STANDBYE;
 #define FINALIZA_REINICIA_VARIBLES 4
 int8_t case_proceso_encendido = INICIA_STANDBYE;
 
+// variables de tipo de figura CD001
+#define BICHOS 1
+#define CIRCULOS 2
+#define NUMEROS 3
+
+//varibles para estados de espera del circulo
+#define UNO 1
+#define DOS 2
+#define TRES 3
+#define CUATRO 4
+#define CINCO 5
+#define SEIS 6
+#define SIETE 7
+
+int case_estado_espera_circulos = UNO;
+
+
+// Valores posibles de variables de matriz led, no se utilizan solo referencia para asignacion
+#define ATRAS 0
+#define TINTA 1
+#define BASE 2
+#define RESALTA 3
+
+//
+uint8_t color_atras_1;
+uint8_t color_atras_2;
+uint8_t color_atras_3;
+uint8_t color_tinta_1;
+uint8_t color_tinta_2; 
+uint8_t color_tinta_3;
+uint8_t color_base_1;
+uint8_t color_base_2;
+uint8_t color_base_3;
+uint8_t color_resalta_1;
+uint8_t color_resalta_2;
+uint8_t color_resalta_3;
+
+
+
+//MATRIZ CIRCULOS CD001
+uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+uint8_t Vector_Circulo_1 [40] = {2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+uint8_t Vector_Circulo_2 [40] = {1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2};
+uint8_t Vector_Circulo_3 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,1,2,1,1,1,1,2,1,1,2,1,1,1,1,2,1};
+uint8_t Vector_Circulo_4 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
+uint8_t Vector_Circulo_5 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
+uint8_t Vector_Circulo_6 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1};
+uint8_t Vector_Circulo_7 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,1,1,1};
+
+
+
+
+#define APAGADO   0  //CD001
+#define ENCENDIDO 1 
+
+#define SIN_CAMBIO_ESTADO_RELOJ 0
+#define DETECTA_CAMBIO_ESTADO_RELOJ 1
+int reloj_lento =ENCENDIDO;
+int reloj_rapido=ENCENDIDO;
+int actualiza_display_lento =SI;
+int actualiza_display_rapido =SI;
+
 
 // estructura de envio de datos al compañero(peer)
 typedef struct structura_mensaje
 {
 int n; //Paquete
-int t; //test
+int t; //tipo de tiro TEST 0,TIRO_ACTIVO 1, READY_JUGADOR 2
 int d; //diana
 int c; //color
 int p; //propietario del
 float tiempo;
+int f; // Grupo de figuras a mostrar CD001
+int s; //no de tiro, sirve para las figuras numeros CD001
 } structura_mensaje;
 
 structura_mensaje datos_enviados;
@@ -178,6 +336,8 @@ void Test_Conexion_Diana()
     datos_enviados.c=1;   //SE MANDA led_1 PARA TEST
     datos_enviados.p=0; // JUGADOR 0 NO ACTIVO
     datos_enviados.tiempo=0; // para regresar el tiempo
+    datos_enviados.f=0; // FIGURA - solo por mandar dato en el campo
+    datos_enviados.s=0;  // SHOT - NUMERO DE TIRO, SOLO DE RELLENO
 
   // monitor
     esp_err_t result4 = esp_now_send(broadcastAddressMonitor, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
@@ -279,6 +439,14 @@ int8_t posicion_nueva       =SIN_DETECCION;
 int captura_tiempo_inicial=SI;
 
 
+// contadores para relojes de encendido y apagado tiras con figuras
+
+volatile unsigned long tiempo_inicial_reloj_lento=0;
+volatile unsigned long tiempo_actual_reloj_lento=0;
+volatile unsigned long tiempo_inicial_reloj_rapido=0;
+volatile unsigned long tiempo_actual_reloj_rapido=0;
+
+
 
 /* -------------------- RECEPCION DE DATOS -----------------------*/
 // Callback when data is received
@@ -310,7 +478,9 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       //Serial.println("datos_recibidos.color ="+String(datos_recibidos.c));
       //Serial.println("datos_recibidos.diana ="+String(datos_recibidos.d));
       //Serial.println("datos_recibidos.propietario ="+String(datos_recibidos.p));
-      //Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));
+      //Serial.println("datos_recibidos.tiempo ="+String(datos_recibidos.tiempo));      
+      //Serial.println("datos_recibidos.figura ="+String(datos_recibidos.f));
+      //Serial.println("datos_recibidos.shot ="+String(datos_recibidos.s));
 
       datos_locales_diana.n= datos_recibidos.n;
       datos_locales_diana.t =datos_recibidos.t;
@@ -318,6 +488,9 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       datos_locales_diana.d =datos_recibidos.d;
       datos_locales_diana.p =datos_recibidos.p;
       datos_locales_diana.tiempo=0.00;
+      datos_locales_diana.f =datos_recibidos.f; // figura CD001
+      datos_locales_diana.s =datos_recibidos.s; // no de disparo CD001
+
       no_paquete++;
       pulsos=0;
       switch (datos_locales_diana.c)
@@ -453,6 +626,10 @@ void setup()
 /* ------------------------inicio loop ----------------------------*/
 void loop() 
 { 
+  // para switchear los parpadeos de las figuras 
+  tiempo_actual_reloj_lento=millis();
+  tiempo_actual_reloj_rapido=millis();
+
   switch (case_estado_diana)
   {
     case APAGADO:
@@ -522,7 +699,7 @@ void loop()
             case MONITOREA_DISPARO:
                   Analisis_De_Frecuencia2();
                   Califica_La_Frecuencia();
-                  Enciende_Tira ();
+                  Enciende_Tira_Figuras (); //ED001 SE CAMBIO Enciende_Tira();
                   if (posicion_nueva==DISPARO_DETECTADO) //posicion nueva es modificado en califica frecuencia
                   {
                     Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
@@ -647,7 +824,7 @@ void Enciende_Tira ()
           // reinicia periodo
           tiempo_inicial_leds=millis();
           // enciende
-          Espera_Tira_Leds();
+          Espera_Tira_Leds(); //CD001 DEBE SACARSE DEL IF YA QUE LA FUNCIONLED INICIO YA NO SIRVE
         }
       break;
     case LASER_APUNTANDO:   // LASER APUNTANDO
@@ -675,6 +852,7 @@ void Enciende_Tira ()
           }
         break;
   }
+
 
   /* nota: se quito la opcion de validar que disparo viniera
    de apuntar, ya que a veces  no lo detecta si el gatillo se oprime
@@ -825,3 +1003,285 @@ void Disparo_Tira_Leds()
 
 }
 
+
+/*
+
+int8_t tiros_de_jugador_por_turno[5]={0,0,0,0,0};
+int8_t color_tablero[40]={1,0,}
+
+
+nuevas fucniones 2 de febrero 2025
+*/
+
+/*
+// variables de tipo de figura
+#define BICHOS 1
+#define CIRCULOS 2
+#define NUMEROS 3
+
+
+
+
+*/
+/*--------------------------------------------------------*/
+void Espera_Tira_Leds_Figuras()
+{ 
+  if (Reloj_Lento()==DETECTA_CAMBIO_ESTADO_RELOJ)
+    {
+      switch (datos_locales_diana.f)
+          {
+            case BICHOS:
+                /*CODE*/
+                break;
+
+            case CIRCULOS:
+                /*CODE*/
+                Display_Espera_Circulos();
+                break;
+
+            case NUMEROS:
+                /*CODE*/
+                break;
+          }
+    }
+}
+
+
+
+void Display_Espera_Circulos()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_espera_circulos)
+    {
+      case UNO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_1[i];
+          }
+        case_estado_espera_circulos=DOS;
+        break;
+
+      case DOS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_2[i];
+          }
+        case_estado_espera_circulos=TRES;
+        break;      
+      case TRES:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_3[i];
+          }
+        case_estado_espera_circulos=CUATRO;
+        break;    
+      case CUATRO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_4[i];
+          }
+        case_estado_espera_circulos=CINCO;
+        break;
+      case CINCO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_5[i];
+          }
+        case_estado_espera_circulos=SEIS;
+        break;
+      case SEIS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_6[i];
+          }
+        case_estado_espera_circulos=SIETE;
+        break;
+
+      case SIETE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_7[i];
+          }
+        case_estado_espera_circulos=UNO;
+        break;
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+
+}
+
+/* ---------------------------------------------------------*/
+
+
+/*
+// valores posibles de Vector_Matriz_led
+#define ATRAS 0
+#define TINTA 1
+#define BASE 2
+#define RESALTA 3
+*/
+void  Enciende_Matriz_Led()
+{
+  //defincion de pantone de colores con base al color solicitado por monitor
+  switch (datos_locales_diana.c) 
+    {
+    case GREEN: 
+      /* code */
+        //color atras = NEGRO
+        color_atras_1=0; color_atras_2=0; color_atras_3=0;
+
+        //color tinta = VERDE
+        color_tinta_1=255; color_tinta_2=0;  color_tinta_3=0;
+
+        // color Base =AMARILLO
+        color_base_1=255; color_base_2=255; color_base_3=0;
+
+        //color Resalta = ROJO
+        color_resalta_1=0; color_resalta_2=255; color_resalta_3=0;   
+      break;
+
+    case BLUE:
+      /*code*/
+      break;
+    }
+
+  //carga color a todos los leds
+  for(int numero_led=0;numero_led<=39;numero_led++)
+    {
+      switch (Vector_Matriz_Led[numero_led])
+        {
+          case ATRAS: // NEGRO
+            strip.setPixelColor(numero_led,strip.Color(color_atras_1,color_atras_2,color_atras_3));
+            break;
+
+          case TINTA: // VERDE O AZUL
+            /* code */
+            strip.setPixelColor(numero_led,strip.Color(color_tinta_1,color_tinta_2,color_tinta_3));
+            break;
+
+          case BASE: 
+            /*CODE*/
+            strip.setPixelColor(numero_led,strip.Color(color_base_1,color_base_2,color_base_3));            
+            break;
+
+          case RESALTA:
+            strip.setPixelColor(numero_led,strip.Color(color_resalta_1,color_resalta_2,color_resalta_3));            
+            break;
+        }
+    }
+  strip.show(); 
+}
+
+/* --------------------------------------------------------*/
+/*
+
+volatile unsigned long tiempo_inicial_reloj_lento=0;
+volatile unsigned long tiempo_actual_reloj_lento=0;
+volatile unsigned long tiempo_inicial_reloj_rapido=0;
+volatile unsigned long tiempo_actual_reloj_rapido=0;
+
+
+#define APAGADO   0  //CD001
+#define ENCENDIDO 1
+#define SINCAMBIO 2
+int reloj_lento =ENCENDIDO;
+int reloj_rapido=ENCENDIDO;
+int actualiza_display =SI;
+*/
+
+int Reloj_Lento() //CD001
+{
+  tiempo_actual_reloj_lento=millis();
+  if ((tiempo_inicial_reloj_lento+1000)<tiempo_actual_reloj_lento)
+    {
+        tiempo_inicial_reloj_lento=millis();
+        actualiza_display_lento=SI;
+        return DETECTA_CAMBIO_ESTADO_RELOJ;
+    }
+  else
+    {
+      actualiza_display_lento=NO;
+      return SIN_CAMBIO_ESTADO_RELOJ;
+    }
+}
+
+/* -------------------------------------------------------*/
+int Reloj_Rapido() //CD001
+{
+  tiempo_actual_reloj_rapido=millis();
+  if ((tiempo_inicial_reloj_rapido+500)<tiempo_actual_reloj_rapido)
+    {
+        tiempo_inicial_reloj_rapido=millis();
+        actualiza_display_rapido=SI;
+        return DETECTA_CAMBIO_ESTADO_RELOJ;      
+    }
+  else
+    {
+      actualiza_display_rapido=NO;
+      return SIN_CAMBIO_ESTADO_RELOJ;
+    }
+}
+
+
+
+
+/*------------------------------------------------------------*/
+void Apunta_Tira_Leds_Figuras()
+{ 
+  if (prende_leds==SI)
+    {
+      strip.clear();
+      strip.setPixelColor(led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+1,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+2,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+8,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+9,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+10,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+16,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+17,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+18,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+24,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+25,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+26,strip.Color(led_1,led_2,led_3));
+      strip.show();
+      prende_leds=NO;
+    }
+}
+
+/* ---------------------------------------------------------------------*/
+void Disparo_Tira_Leds_Figuras()
+{     int i;
+      strip.setBrightness(250);
+      strip.clear();
+      for(i=0;i<=16;i++)
+      {
+      strip.setPixelColor(i,strip.Color(250,250,250));
+      }
+      strip.show();
+      delay(10);
+      strip.setBrightness(100);
+      strip.clear();
+      strip.show();
+     
+
+}
+
+/* ----------------------------------------------------------*/
+void Enciende_Tira_Figuras()
+{ 
+  tiempo_actual_leds=millis();
+  switch (posicion_nueva)
+  {
+    case SIN_DETECCION:   // SIN_DETECCION
+        Espera_Tira_Leds_Figuras(); //CD001 DEBE SACARSE DEL IF YA QUE LA FUNCIONLED INICIO YA NO SIRVE
+        break;
+    case LASER_APUNTANDO:   // LASER APUNTANDO
+        Apunta_Tira_Leds_Figuras();
+        break;
+    case DISPARO_DETECTADO:   // DISPARO_DETECTADO
+        Disparo_Tira_Leds_Figuras();
+        break;
+  }
