@@ -244,6 +244,20 @@ uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3
 
 // MATRIZ NUMEROS
 //uint8_t Vector_Matriz_Led[40]         = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+  uint8_t Vector_Numeros_20[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
+
+  uint8_t Vector_Numeros_21[40]         = {1,1,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,0,0,1,0,0,0,0,0,1,1,1,1,0,0,0,1,0};
+  uint8_t Vector_Numeros_22[40]         = {1,1,1,0,0,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_23[40]         = {1,1,1,0,0,1,1,1,0,0,0,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_24[40]         = {1,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
+
+  uint8_t Vector_Numeros_25[40]         = {1,1,1,0,0,1,1,1,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
+
+  uint8_t Vector_Numeros_26[40]         = {1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_27[40]         = {1,1,1,0,0,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
+  uint8_t Vector_Numeros_28[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
+
+
   uint8_t Vector_Numeros_29[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
   uint8_t Vector_Numeros_30[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1};
   uint8_t Vector_Numeros_PARPADEA1[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,2,2,3,0,0};
@@ -599,6 +613,8 @@ void Enciende_Tira_Figuras();
     int Reloj_Lento();
     void Asigna_Leds_Espera_Circulos();
     void Asigna_Leds_Espera_Bichos();
+    void Asigna_Leds_Espera_Numeros();
+
 
 
   void Apunta_Tira_Leds_Figuras();
@@ -1314,63 +1330,88 @@ void Asigna_Leds_Espera_Numeros()
         case_estado_espera_numeros=PARPADEA1;        
         break;
 
-
-
-
-
-
-      case UNO:
+      case 28:
+        /*code*/
         for(int i=0;i<=39;i++)
           {
-            Vector_Matriz_Led[i]=Vector_Circulo_1[i];
+            Vector_Matriz_Led[i]=Vector_Numeros_28[i];
           }
-        case_estado_espera_circulos=DOS;
+        case_estado_espera_numeros=PARPADEA1;        
         break;
 
-      case DOS:
+      case 27:
+        /*code*/
         for(int i=0;i<=39;i++)
           {
-            Vector_Matriz_Led[i]=Vector_Circulo_2[i];
+            Vector_Matriz_Led[i]=Vector_Numeros_27[i];
           }
-        case_estado_espera_circulos=TRES;
-        break;      
-      case TRES:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_3[i];
-          }
-        case_estado_espera_circulos=CUATRO;
-        break;    
-      case CUATRO:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_4[i];
-          }
-        case_estado_espera_circulos=CINCO;
-        break;
-      case CINCO:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_5[i];
-          }
-        case_estado_espera_circulos=SEIS;
-        break;
-      case SEIS:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_6[i];
-          }
-        case_estado_espera_circulos=SIETE;
+        case_estado_espera_numeros=PARPADEA1;        
         break;
 
-      case SIETE:
+      case 26:
+        /*code*/
         for(int i=0;i<=39;i++)
           {
-            Vector_Matriz_Led[i]=Vector_Circulo_7[i];
+            Vector_Matriz_Led[i]=Vector_Numeros_26[i];
           }
-        case_estado_espera_circulos=UNO;
+        case_estado_espera_numeros=PARPADEA1;        
         break;
-    }
+
+      case 25:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_25[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 24:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_24[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 23:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_23[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 22:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_22[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 21:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_21[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 20:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_20[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+    } // fin swtich case_estado_espera_numero
   /* solicita encender matriz*/
   Enciende_Matriz_Led();
 
