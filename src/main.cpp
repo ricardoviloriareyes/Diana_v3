@@ -13,6 +13,9 @@
 
 /*
 
+CD003 5 febrero 
+Se debe revisar que llegue la figura seleccionada en monitor y el numero dedisparo
+
 CD-001 2 febrero 2025
 Integracion de  figuras
 
@@ -158,7 +161,7 @@ int8_t case_proceso_encendido = INICIA_STANDBYE;
 #define CIRCULOS 2
 #define NUMEROS 3
 
-//varibles para estados de espera del circulo
+//ESPERA
 #define UNO 1
 #define DOS 2
 #define TRES 3
@@ -167,7 +170,25 @@ int8_t case_proceso_encendido = INICIA_STANDBYE;
 #define SEIS 6
 #define SIETE 7
 
+//APUNTA
+#define OCHO 8
+#define NUEVE 9
+
+
+//NUMEROS
+#define TREINTA 30
+#define PARPADEA1 50
+#define PARPADEA2 51
+int8_t  numero_calculado_de_tiro=UNO;
+
 int case_estado_espera_circulos = UNO;
+int case_estado_apunta_circulos = OCHO;
+
+int case_estado_espera_bichos= UNO;
+int case_estado_apunta_bichos= OCHO;
+
+int case_estado_espera_numeros = TREINTA;
+int case_estado_apunta_numeros =OCHO;
 
 
 // Valores posibles de variables de matriz led, no se utilizan solo referencia para asignacion
@@ -190,17 +211,43 @@ uint8_t color_resalta_1;
 uint8_t color_resalta_2;
 uint8_t color_resalta_3;
 
-
-
-//MATRIZ CIRCULOS CD001
+// Matriz global de asignacion 
 uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
-uint8_t Vector_Circulo_1 [40] = {2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-uint8_t Vector_Circulo_2 [40] = {1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2};
-uint8_t Vector_Circulo_3 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,1,2,1,1,1,1,2,1,1,2,1,1,1,1,2,1};
-uint8_t Vector_Circulo_4 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
-uint8_t Vector_Circulo_5 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
-uint8_t Vector_Circulo_6 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1};
-uint8_t Vector_Circulo_7 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,1,1,1};
+
+//MATRIZ CIRCULOS 
+/*apunta*/
+//uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+  uint8_t Vector_Circulo_9 [40] = {1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,3,3,1,0,1};
+  uint8_t Vector_Circulo_8 [40] = {1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,3,3,0,1,0};
+//espera
+  uint8_t Vector_Circulo_7 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,1,1,1};
+  uint8_t Vector_Circulo_6 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1};
+  uint8_t Vector_Circulo_5 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
+  uint8_t Vector_Circulo_4 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,2,1,1,2,1,1};
+  uint8_t Vector_Circulo_3 [40] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,1,1,2,1,1,1,1,2,1,1,2,1,1,1,1,2,1};
+  uint8_t Vector_Circulo_2 [40] = {1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,1,2};
+  uint8_t Vector_Circulo_1 [40] = {2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+
+
+// MATRIZ BICHOS
+/*apunta*/
+//uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+  uint8_t Vector_Bichos_9[40]   = {0,0,1,1,1,1,1,0,0,1,2,1,2,1,0,0,0,0,1,1,1,1,1,0,0,1,0,1,0,1,0,0,0,0,2,3,3,2,0,0};
+  uint8_t Vector_Bichos_8[40]   = {0,0,1,1,1,1,1,0,0,1,2,1,2,1,0,0,0,0,1,1,1,1,1,0,0,1,0,1,0,1,0,0,0,0,2,3,3,2,0,0};
+/* espera*/
+  uint8_t Vector_Bichos_6[40]   = {0,0,1,1,1,1,1,0,0,1,2,1,2,1,0,0,0,0,1,1,1,1,1,0,0,1,0,1,0,1,0,0,0,0,2,3,3,2,0,0};
+  uint8_t Vector_Bichos_5[40]   = {0,1,1,1,1,1,0,0,0,0,1,2,1,2,1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,0,0,3,3,0,0,0};
+  uint8_t Vector_Bichos_4[40]   = {0,1,1,1,1,1,0,0,0,0,1,2,1,2,1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,0,2,3,3,2,0,0};
+  uint8_t Vector_Bichos_3[40]   = {0,1,1,1,1,1,0,0,0,0,1,2,1,2,1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,0,0,3,3,0,0,0};
+  uint8_t Vector_Bichos_2[40]   = {0,0,1,1,1,1,1,0,0,1,2,1,2,1,0,0,0,0,1,1,1,1,1,0,0,1,0,1,0,1,0,0,0,0,2,3,3,2,0,0};
+  uint8_t Vector_Bichos_1[40]   = {0,0,0,1,1,1,1,1,1,2,1,2,1,0,0,0,0,0,0,1,1,1,1,1,1,0,1,0,1,0,0,0,0,0,0,3,3,0,0,0};
+
+// MATRIZ NUMEROS
+//uint8_t Vector_Matriz_Led[40]         = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+  uint8_t Vector_Numeros_29[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
+  uint8_t Vector_Numeros_30[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_PARPADEA1[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,2,2,3,0,0};
+  uint8_t Vector_Numeros_PARPADEA2[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,2,3,3,2,0,0};
 
 
 
@@ -490,6 +537,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       datos_locales_diana.tiempo=0.00;
       datos_locales_diana.f =datos_recibidos.f; // figura CD001
       datos_locales_diana.s =datos_recibidos.s; // no de disparo CD001
+      numero_calculado_de_tiro=31-datos_locales_diana.s;
 
       no_paquete++;
       pulsos=0;
@@ -545,6 +593,26 @@ void Espera_Tira_Leds();
 void Apunta_Tira_Leds();
 void Disparo_Tira_Leds();
 void Envia_Resultados_Al_Monitor();
+
+void Enciende_Tira_Figuras();
+  void Espera_Tira_Leds_Figuras();
+    int Reloj_Lento();
+    void Asigna_Leds_Espera_Circulos();
+    void Asigna_Leds_Espera_Bichos();
+
+
+  void Apunta_Tira_Leds_Figuras();
+    int Reloj_Rapido();
+    void Asigna_Leds_Apunta_Circulos();
+    void Asigna_Leds_Apunta_Bichos();
+
+  void Disparo_Tira_Leds_Figuras();
+
+//Comun
+    void  Enciende_Matriz_Led();
+
+
+
 
 
 
@@ -652,7 +720,7 @@ void loop()
               enviar_datos=NO;
               strip.clear();
               strip.show();
-              for (i=0; i<=3;++i)
+              for (int i=0; i<=3;++i)
                 {strip.setPixelColor(i,strip.Color(0,250,0));
                 }
               strip.show();
@@ -676,12 +744,13 @@ void loop()
             Serial.println("");
             Serial.println("");
         }
+
       // proceso encendido
       switch (case_proceso_encendido)
         {
             case INICIA_STANDBYE:          
                   Serial.println("reinicia frecuencias");
-                  for (i=0; i<=9;++i)
+                  for (int i=0; i<=9;++i)
                   {
                     muestra[i]=0;
                   }
@@ -988,14 +1057,13 @@ void Apunta_Tira_Leds()
 /* ---------------------------------------------------------------------*/
 void Disparo_Tira_Leds()
 {     int i;
-      strip.setBrightness(250);
-      strip.clear();
-      for(i=0;i<=16;i++)
+      strip.setBrightness(100);
+      for(i=0;i<=39;i++)
       {
       strip.setPixelColor(i,strip.Color(250,250,250));
       }
       strip.show();
-      delay(10);
+      delay(20);
       strip.setBrightness(100);
       strip.clear();
       strip.show();
@@ -1032,11 +1100,37 @@ void Espera_Tira_Leds_Figuras()
           {
             case BICHOS:
                 /*CODE*/
+                Asigna_Leds_Espera_Bichos();
                 break;
 
             case CIRCULOS:
                 /*CODE*/
-                Display_Espera_Circulos();
+                Asigna_Leds_Espera_Circulos();
+                break;
+
+            case NUMEROS:
+                /*CODE*/
+                Asigna_Leds_Espera_Numeros();
+                break;
+          }
+    }
+}
+
+/*--------------------------------------------------------*/
+void Apunta_Tira_Leds_Figuras()
+{ 
+  if (Reloj_Rapido()==DETECTA_CAMBIO_ESTADO_RELOJ)
+    {
+      switch (datos_locales_diana.f)
+          {
+            case BICHOS:
+                /*CODE*/
+                Asigna_Leds_Apunta_Bichos();
+                break;
+
+            case CIRCULOS:
+                /*CODE*/
+                Asigna_Leds_Apunta_Circulos();
                 break;
 
             case NUMEROS:
@@ -1047,8 +1141,8 @@ void Espera_Tira_Leds_Figuras()
 }
 
 
-
-void Display_Espera_Circulos()
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Espera_Circulos()
 {     
   /*asigna color del matriz*/
   switch (case_estado_espera_circulos)
@@ -1110,9 +1204,240 @@ void Display_Espera_Circulos()
 
   // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
   // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+}
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Espera_Bichos()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_espera_bichos)
+    {
+      case UNO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_1[i];
+          }
+        case_estado_espera_bichos=DOS;
+        break;
+
+      case DOS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_2[i];
+          }
+        case_estado_espera_bichos=TRES;
+        break;      
+      case TRES:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_3[i];
+          }
+        case_estado_espera_bichos=CUATRO;
+        break;    
+      case CUATRO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_4[i];
+          }
+        case_estado_espera_bichos=CINCO;
+        break;
+      case CINCO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_5[i];
+          }
+        case_estado_espera_bichos=SEIS;
+        break;
+      case SEIS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_6[i];
+          }
+        case_estado_espera_bichos=UNO;
+        break;
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  /* 
+  Nota de navegacion:
+  el cambio del valor a "bajar el estado" lo realiza el reloj lento ya que al calcular el valor regresa
+  SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente hasta que el reloj cumpla la condicion
+  */
+
 
 }
 
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Espera_Numeros()
+{  
+  
+  /*asigna color del matriz*/
+  //el numero_calculado_de_tiro = 31-datos_locales_diana.s  y se asigna cuando se recibe el paquete y es fijo
+  switch (case_estado_espera_numeros) // selecciona la figura del tiro
+    {
+      case TREINTA:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_30[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+
+      case PARPADEA1:
+        /* code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_PARPADEA1[i];
+          }
+        case_estado_espera_numeros=PARPADEA2;               
+        break;
+
+      case PARPADEA2:
+        /* code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_PARPADEA1[i];
+          }
+        case_estado_espera_numeros=numero_calculado_de_tiro;               
+        break;
+
+      case 29:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_29[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+
+
+
+
+
+      case UNO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_1[i];
+          }
+        case_estado_espera_circulos=DOS;
+        break;
+
+      case DOS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_2[i];
+          }
+        case_estado_espera_circulos=TRES;
+        break;      
+      case TRES:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_3[i];
+          }
+        case_estado_espera_circulos=CUATRO;
+        break;    
+      case CUATRO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_4[i];
+          }
+        case_estado_espera_circulos=CINCO;
+        break;
+      case CINCO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_5[i];
+          }
+        case_estado_espera_circulos=SEIS;
+        break;
+      case SEIS:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_6[i];
+          }
+        case_estado_espera_circulos=SIETE;
+        break;
+
+      case SIETE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_7[i];
+          }
+        case_estado_espera_circulos=UNO;
+        break;
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+}
+
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Apunta_Circulos()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_apunta_circulos)
+    {
+      case OCHO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_8[i];
+          }
+        case_estado_espera_circulos=NUEVE;
+        break;
+
+      case NUEVE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_9[i];
+          }
+        case_estado_espera_circulos=OCHO;
+        break;      
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+
+}
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Apunta_Bichos()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_apunta_circulos)
+    {
+      case OCHO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_8[i];
+          }
+        case_estado_espera_bichos=NUEVE;
+        break;
+
+      case NUEVE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Bichos_9[i];
+          }
+        case_estado_espera_bichos=OCHO;
+        break;      
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+
+}
 /* ---------------------------------------------------------*/
 
 
@@ -1145,6 +1470,17 @@ void  Enciende_Matriz_Led()
 
     case BLUE:
       /*code*/
+        //color atras = NEGRO
+        color_atras_1=0; color_atras_2=0; color_atras_3=0;
+
+        //color tinta = AZUL
+        color_tinta_1=0; color_tinta_2=0;  color_tinta_3=255;
+
+        // color Base =AMARILLO
+        color_base_1=255; color_base_2=255; color_base_3=0;
+
+        //color Resalta = ROJO
+        color_resalta_1=0; color_resalta_2=255; color_resalta_3=0;
       break;
     }
 
@@ -1176,21 +1512,7 @@ void  Enciende_Matriz_Led()
 }
 
 /* --------------------------------------------------------*/
-/*
 
-volatile unsigned long tiempo_inicial_reloj_lento=0;
-volatile unsigned long tiempo_actual_reloj_lento=0;
-volatile unsigned long tiempo_inicial_reloj_rapido=0;
-volatile unsigned long tiempo_actual_reloj_rapido=0;
-
-
-#define APAGADO   0  //CD001
-#define ENCENDIDO 1
-#define SINCAMBIO 2
-int reloj_lento =ENCENDIDO;
-int reloj_rapido=ENCENDIDO;
-int actualiza_display =SI;
-*/
 
 int Reloj_Lento() //CD001
 {
@@ -1228,35 +1550,14 @@ int Reloj_Rapido() //CD001
 
 
 
-/*------------------------------------------------------------*/
-void Apunta_Tira_Leds_Figuras()
-{ 
-  if (prende_leds==SI)
-    {
-      strip.clear();
-      strip.setPixelColor(led_inicio,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+1,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+2,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+8,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+9,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+10,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+16,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+17,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+18,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+24,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+25,strip.Color(led_1,led_2,led_3));
-      strip.setPixelColor(led_inicio+26,strip.Color(led_1,led_2,led_3));
-      strip.show();
-      prende_leds=NO;
-    }
-}
+
 
 /* ---------------------------------------------------------------------*/
 void Disparo_Tira_Leds_Figuras()
-{     int i;
-      strip.setBrightness(250);
+{    
+      strip.setBrightness(100);
       strip.clear();
-      for(i=0;i<=16;i++)
+      for(int i=0;i<=16;i++)
       {
       strip.setPixelColor(i,strip.Color(250,250,250));
       }
@@ -1276,7 +1577,7 @@ void Enciende_Tira_Figuras()
   switch (posicion_nueva)
   {
     case SIN_DETECCION:   // SIN_DETECCION
-        Espera_Tira_Leds_Figuras(); //CD001 DEBE SACARSE DEL IF YA QUE LA FUNCIONLED INICIO YA NO SIRVE
+        Espera_Tira_Leds_Figuras(); //CD001 se SACA DEL IF YA QUE LA FUNCIONLED INICIO YA NO SIRVE
         break;
     case LASER_APUNTANDO:   // LASER APUNTANDO
         Apunta_Tira_Leds_Figuras();
@@ -1285,3 +1586,4 @@ void Enciende_Tira_Figuras()
         Disparo_Tira_Leds_Figuras();
         break;
   }
+}
