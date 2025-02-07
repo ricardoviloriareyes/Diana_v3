@@ -24,27 +24,20 @@ ERROR DIANA 890 -22ene2025
 - se adiciona el numero de paquete al paquete enviado
 - se pone luz roja de disponible en equipo en envio exitoso
 - se corren pruebas de velocidad y se comporta estable
-
 */
-//24:62:AB:DC:AC:F4
-
 
 // direcciones mac de ESTE RECEPTOR (PARA SER CAPTURADA EN EL  MONITOR)
 uint8_t   broadcastAddress1[]={0x24,0x62,0xAB,0xDC,0xAC,0xF4};
-
-
 //4c:eb:d6:75:48:30
 
 //Monitor Central para regreso de resultados
 uint8_t   broadcastAddressMonitor[]={0x4C,0xEB,0xD6,0x75,0x48,0x30}; 
 
-
-// informacion para definicion de colores solamente,
+// informacion de referencia del monitor para definicion de colores,
 /*
 const uint16_t colors_global[] = 
   { 
      matrix_arriba.Color(150,150,150),
-
      matrix_arriba.Color(255,50,  0 ), 
      matrix_arriba.Color( 0, 255,  0 ),
      matrix_arriba.Color( 0,   0, 255),
@@ -60,70 +53,6 @@ const uint16_t colors_global[] =
 #define BLUE  3
 #define BLUE_LIGHT 4
 #define ORANGE 5
-
-
-entra en tiro, se revisa si que tiene que mostrar
-si muestra numeros, entonces se inicia figuras=numeros
-ciclo=1, se selecciona el numero
-cada numero debe tener diferentes colores para cada ciclo
-al terminar un ciclo debe regresar a uno hasta detectar el apunta
-en apunta la reglon 5 parpadea aleatorio y mucho mas rapido y puede ser el ciclo doble de rapido
-CUANDO LLEGA SE SELECCIONA LA FIGURA A MOSTRAR
-NUMERO DE CICLOS A MOSTRAR SEGUN LA FIGURA
-
-
-AL LLEGAR EL TIRO RECIBE EL COLOR, LA FIGURA Y EL NUMERO DE TIRO
-
-AL ENTRAR EL DESPLIEGUE SE REVISA:
-
-LA FIGURA
-    FIGURA SPACEINVADER
-
-    FIGURA NUMERO
-           SE ASIGNAN MATRICES PARA CICLOS
-              1,2,3,4,5
-           CASE CICLO
-                1. SE MUESTRA MATRIZ AGINADA
-                   FOR  DE 0 A 40
-                   {
-                   se asgina  color para led
-                        {
-                          black l1=0, l2=0,l3=0;
-                          white  led1=255 led2=255 led3255;
-                        }
-  set.pixelcolor (pixel,led1,led2,led3);
-                      
-                   SE ASIGNA COLOR}
-                   
-                2: MATRIZ ASIGNADA
-                3: MATRIZ ASIGNADA
-                4. MATRIZ ASIGNADA
-                5: MATRIZ ASIGNADA
-
-
-
-
-do case figura
-   
-   numero
-          do case numero_mostrado
-             UNO
-             MATRIZMOSTRAR=MATRIZSELECCIONADA A LA RECEPCION
-
-
-for pixel=0 a 39
-{
-  do case color
-    {
-            black l1=0, l2=0,l3=0;
-            white  led1=255 led2=255 led3255;
-    }
-  set.pixelcolor (pixel,led1,led2,led3);
-
-
-}
-
-
 */
 
 
@@ -134,7 +63,6 @@ for pixel=0 a 39
 #define RED   1
 #define GREEN 2
 #define BLUE  3
-
           
 // variables de control de tiempo
 volatile unsigned long previous_time_reenvio,current_time_reenvio;
@@ -148,7 +76,6 @@ int intentos_envio=0;
 int8_t flujo_de_envio = STANDBYE;
 
 // logica del proceso del disparo
-
 #define INICIA_STANDBYE 0
 #define INICIALIZA_TIEMPO 1
 #define MONITOREA_DISPARO 2
@@ -174,7 +101,6 @@ int8_t case_proceso_encendido = INICIA_STANDBYE;
 #define OCHO 8
 #define NUEVE 9
 
-
 //NUMEROS
 #define TREINTA 30
 #define PARPADEA1 50
@@ -197,7 +123,7 @@ int case_estado_apunta_numeros =OCHO;
 #define BASE 2
 #define RESALTA 3
 
-//
+//Variables de combinaciones de RGB para cada color, se cambian segun la figura y el tiro recibido
 uint8_t color_atras_1;
 uint8_t color_atras_2;
 uint8_t color_atras_3;
@@ -277,9 +203,6 @@ uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3
   uint8_t Vector_Numeros_PARPADEA1[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,2,2,3,0,0};
   uint8_t Vector_Numeros_PARPADEA2[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,2,3,3,2,0,0};
 
-
-
-
 #define APAGADO   0  //CD001
 #define ENCENDIDO 1 
 
@@ -289,7 +212,6 @@ int reloj_lento =ENCENDIDO;
 int reloj_rapido=ENCENDIDO;
 int actualiza_display_lento =SI;
 int actualiza_display_rapido =SI;
-
 
 // estructura de envio de datos al compañero(peer)
 typedef struct structura_mensaje
@@ -307,7 +229,6 @@ int s; //no de tiro, sirve para las figuras numeros CD001
 structura_mensaje datos_enviados;
 structura_mensaje datos_recibidos;
 structura_mensaje datos_locales_diana;  // para usar en diana
-
 
 #define TEST 0
 #define TIRO_ACTIVO 1
@@ -598,17 +519,6 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 //declaracion de funciones
 void Analisis_De_Frecuencia2();
 void Califica_La_Frecuencia();
@@ -642,16 +552,11 @@ void Enciende_Tira_Figuras();
   void Disparo_Tira_Leds_Figuras();
 
 //Comun
-    void  Enciende_Matriz_Led();
+void  Enciende_Matriz_Led();
 
-
-
-
-
-
+//Contadores
 int i;
-
-
+/*-----------------------------------------------------------------------------*/
 void Cuenta_Pulso()
 {
  pulsos++;
