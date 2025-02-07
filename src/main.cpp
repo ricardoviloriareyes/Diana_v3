@@ -626,16 +626,18 @@ void Envia_Resultados_Al_Monitor();
 void Enciende_Tira_Figuras();
   void Espera_Tira_Leds_Figuras();
     int Reloj_Lento();
-    void Asigna_Leds_Espera_Circulos();
     void Asigna_Leds_Espera_Bichos();
+    void Asigna_Leds_Espera_Circulos();
     void Asigna_Leds_Espera_Numeros();
 
 
 
   void Apunta_Tira_Leds_Figuras();
     int Reloj_Rapido();
-    void Asigna_Leds_Apunta_Circulos();
     void Asigna_Leds_Apunta_Bichos();
+    void Asigna_Leds_Apunta_Circulos();
+    void Asigna_Leds_Apunta_Numeros();
+
 
   void Disparo_Tira_Leds_Figuras();
 
@@ -755,15 +757,12 @@ void loop()
                 {strip.setPixelColor(i,strip.Color(0,250,0));
                 }
               strip.show();
-              //890
-
             }
           else 
             {
               Serial.println("Error envio : "+String(intentos_envio));
               intentos_envio++;
               flujo_de_envio=PAUSA_REENVIO;
-
               strip.clear();
               strip.show();
               strip.setPixelColor(1,strip.Color(0,250,0));
@@ -772,8 +771,8 @@ void loop()
               strip.show();
               previous_time_reenvio=millis();
             }
-            Serial.println("");
-            Serial.println("");
+          Serial.println("");
+          Serial.println("");
         }
 
       // proceso encendido
@@ -1166,6 +1165,7 @@ void Apunta_Tira_Leds_Figuras()
 
             case NUMEROS:
                 /*CODE*/
+                Asigna_Leds_Apunta_Numeros(); 
                 break;
           }
     }
@@ -1611,35 +1611,6 @@ void Asigna_Leds_Espera_Numeros()
 }
 
 
-/*----------------------------------------------------------------------*/
-void Asigna_Leds_Apunta_Circulos()
-{     
-  /*asigna color del matriz*/
-  switch (case_estado_apunta_circulos)
-    {
-      case OCHO:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_8[i];
-          }
-        case_estado_espera_circulos=NUEVE;
-        break;
-
-      case NUEVE:
-        for(int i=0;i<=39;i++)
-          {
-            Vector_Matriz_Led[i]=Vector_Circulo_9[i];
-          }
-        case_estado_espera_circulos=OCHO;
-        break;      
-    }
-  /* solicita encender matriz*/
-  Enciende_Matriz_Led();
-
-  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
-  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
-
-}
 
 /*----------------------------------------------------------------------*/
 void Asigna_Leds_Apunta_Bichos()
@@ -1668,9 +1639,64 @@ void Asigna_Leds_Apunta_Bichos()
 
   // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
   // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
-
 }
-/* ---------------------------------------------------------*/
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Apunta_Circulos()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_apunta_circulos)
+    {
+      case OCHO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_8[i];
+          }
+        case_estado_apunta_circulos=NUEVE;
+        break;
+
+      case NUEVE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_9[i];
+          }
+        case_estado_apunta_circulos=OCHO;
+        break;      
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+
+  // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+  // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+}
+
+/*----------------------------------------------------------------------*/
+void Asigna_Leds_Apunta_Numeros()
+{     
+  /*asigna color del matriz*/
+  switch (case_estado_apunta_numeros)
+    {
+      case OCHO:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_8[i]; // se utiliza tambien para apuntar en nuemreos
+          }
+        case_estado_apunta_numeros=NUEVE;
+        break;
+
+      case NUEVE:
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Circulo_9[i]; // se utiliza tambien para apuntar en nuemreos
+          }
+        case_estado_apunta_numeros=OCHO;
+        break;      
+    }
+  /* solicita encender matriz*/
+  Enciende_Matriz_Led();
+                      // el bajar el estado lo realiza el reloj lento ya que al regresar el valor ya regres 
+                      // SIN CAMBIO DE ESTADO y ya no entra a escribir el siguiente
+}
 
 
 /*
