@@ -244,20 +244,34 @@ uint8_t Vector_Matriz_Led[40] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3
 
 // MATRIZ NUMEROS
 //uint8_t Vector_Matriz_Led[40]         = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9};
+  uint8_t Vector_Numeros_1[40]          = {0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,0,0};
+  uint8_t Vector_Numeros_2[40]          = {0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,1,0,0};
+  uint8_t Vector_Numeros_3[40]          = {0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0};
+  uint8_t Vector_Numeros_4[40]          = {0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0};
+  uint8_t Vector_Numeros_5[40]          = {0,0,1,1,1,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0};
+  uint8_t Vector_Numeros_6[40]          = {0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0};
+  uint8_t Vector_Numeros_7[40]          = {0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0};
+  uint8_t Vector_Numeros_8[40]          = {0,0,1,1,1,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0};
+  uint8_t Vector_Numeros_9[40]          = {0,0,1,1,1,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0};
+  uint8_t Vector_Numeros_10[40]         = {1,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0,0,1,0,0,0,1,0,1,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_11[40]         = {1,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,1,0,0,0,1,1,1,0,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_12[40]         = {1,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,1,0,0,0,1,1,1,0,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_13[40]         = {1,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_14[40]         = {1,1,0,0,0,1,1,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_15[40]         = {1,1,0,0,0,1,1,1,0,0,1,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_16[40]         = {1,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_17[40]         = {1,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,1,1,1,0,0,0,0,1};
+  uint8_t Vector_Numeros_18[40]         = {1,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1};
+  uint8_t Vector_Numeros_19[40]         = {1,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0,0,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,0,0,1};
   uint8_t Vector_Numeros_20[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
-
   uint8_t Vector_Numeros_21[40]         = {1,1,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,0,0,1,0,0,0,0,0,1,1,1,1,0,0,0,1,0};
   uint8_t Vector_Numeros_22[40]         = {1,1,1,0,0,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
   uint8_t Vector_Numeros_23[40]         = {1,1,1,0,0,1,1,1,0,0,0,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1};
   uint8_t Vector_Numeros_24[40]         = {1,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
-
   uint8_t Vector_Numeros_25[40]         = {1,1,1,0,0,1,1,1,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
-
   uint8_t Vector_Numeros_26[40]         = {1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
   uint8_t Vector_Numeros_27[40]         = {1,1,1,0,0,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
   uint8_t Vector_Numeros_28[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,1,1,0,0,1,1,1};
-
-
   uint8_t Vector_Numeros_29[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1};
   uint8_t Vector_Numeros_30[40]         = {1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,1,1};
   uint8_t Vector_Numeros_PARPADEA1[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,2,2,3,0,0};
@@ -534,8 +548,9 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   if (datos_recibidos.t>=TIRO_ACTIVO)  // JUGADOR READY =2 TIRO ACTIVO =1
     { 
       Serial.println("RECEPCION PAQUETE"+String(datos_recibidos.n));
+
       //Serial.println("datos_recibidos.no_paquete ="+String(datos_recibidos.n));
-      Serial.println("datos_recibidos.tpo_tiro ="+String(datos_recibidos.t));
+      Serial.println("datos_recibidos.tipo_tiro ="+String(datos_recibidos.t));
       //Serial.println("datos_recibidos.color ="+String(datos_recibidos.c));
       //Serial.println("datos_recibidos.diana ="+String(datos_recibidos.d));
       //Serial.println("datos_recibidos.propietario ="+String(datos_recibidos.p));
@@ -1410,6 +1425,182 @@ void Asigna_Leds_Espera_Numeros()
           }
         case_estado_espera_numeros=PARPADEA1;        
         break;
+
+      case 19:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_19[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 18:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_18[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 17:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_17[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 16:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_16[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 15:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_15[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 14:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_14[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 13:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_13[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 12:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_12[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 11:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_11[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 10:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_10[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 9:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_9[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 8:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_8[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 7:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_7[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 6:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_6[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 5:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_5[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 4:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_4[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 3:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_3[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
+      case 2:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_2[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+      case 1:
+        /*code*/
+        for(int i=0;i<=39;i++)
+          {
+            Vector_Matriz_Led[i]=Vector_Numeros_1[i];
+          }
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+      default:
+        /*code*/
+        Serial.println("Error: Se paso el contador :"+String(case_estado_espera_numeros));
+        case_estado_espera_numeros=PARPADEA1;        
+        break;
+
 
     } // fin swtich case_estado_espera_numero
   /* solicita encender matriz*/
