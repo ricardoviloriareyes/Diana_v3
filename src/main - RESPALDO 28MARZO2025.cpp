@@ -87,13 +87,10 @@ int8_t case_proceso_encendido = INICIA_STANDBYE;
 #define BICHOS 1
 #define CIRCULOS 2
 #define NUMEROS 3
-
-//JUGADORES
-#define JUGADOR_NO_ACTIVO 0
-#define JUGADOR1 1
-#define JUGADOR2 2
-#define JUGADOR3 3
-#define JUGADOR4 4
+;
+;
+;
+;
 
 
 //ESPERA
@@ -221,65 +218,18 @@ int reloj_rapido=ENCENDIDO;
 int actualiza_display_lento =SI;
 int actualiza_display_rapido =SI;
 
-
- 
-
-
-//Tipos de juegos
-#define JUEGO_CLASICO 1
-#define JUEGO_TORNEO 2
-#define JUEGO_EQUIPOS 3
-#define JUEGO_VELOCIDAD 4
-
-
-
-// varibles para condiciones de manejo del tiro
-#define PRIVADO 0
-#define PUBLICO 1
-
-#define NORMAL 1
-#define BONO 2
-#define CASTIGO 3
-
-
 // estructura de envio de datos al compañero(peer)
 typedef struct structura_mensaje
-{ 
-  //control
-  int n; // numero de paquete para pruebas
-
-  //propiedades del Juego
-  uint8_t ju; //numero del juego 1 JUEGO_CLASICO, 2 JUEGO TORNEO, 3 JUEGO EQUIPOS , 4 JUEGO VELOCIDAD
-  uint8_t jr; //numero del round corresponde al round que esta corriendo en cada juego 
-
-  //Propiedades del Paquete
-  uint8_t t; //test
-  uint8_t d; //diana
-  uint8_t c; //color
-  uint8_t p; //No. de jugador
-
-  //propiedades del tiro
-  uint8_t s; //numero de tiro, sirve para las figuras numeros CD001
-  float tiempo;
-
-
-  //Condiciones de manejo del tiro
-  uint8_t pp; // tiro privado (solo jugador original ) o publico (cualquiera de los dos)
-  uint8_t pa; // No. de jugador alternativo en caso de ser tiro publico
-  uint8_t vt; // valor del tiro , NORMAL=1, BONO =1, CASTIGO=0 
-
-  // propiedades de figura
-  uint16_t vf; //velocidad de cambio de la figura valores netos como 1500, 2000 o 3000 milisegundos
-  uint8_t  tf;  //tipo de la figura
-  uint8_t  xf;  //iniciar con figura 
-
-  // resultado OBTENIDO del disparo
-  int16_t  po;  // puntuacion obtenida del disparo
-  uint8_t  fi;     // figura impactada para marcador en monitor
-
+{
+int n; //Paquete
+int t; //tipo de tiro TEST 0,TIRO_ACTIVO 1, READY_JUGADOR 2
+int d; //diana
+int c; //color
+int p; //propietario del
+float tiempo;
+int f; // Grupo de figuras a mostrar CD001
+int s; //no de tiro, sirve para las figuras numeros CD001
 } structura_mensaje;
-
-/* fin de importacion*/
 
 structura_mensaje datos_enviados;
 structura_mensaje datos_recibidos;
@@ -287,73 +237,9 @@ structura_mensaje datos_locales_diana;  // para usar en diana
 
 #define TEST 0
 #define TIRO_ACTIVO 1
-#define JUGADOR_READY 2
-
-/* 3MAYO2025 SE ANEXA*/
-//valores para Tipos de figuras  a enviar
-
-#define TIPO_TEST    0
-#define TIPO_NORMAL  1
-#define TIPO_BONO    2
-#define TIPO_CASTIGO 3
-uint8_t tipo_de_figura=TIPO_NORMAL;
-
-
-
-//valores para tipos de figuras a enviar
-//Normal
-#define FIGURA_SIN_DEFINIR 0
-#define NORMAL_CONEJO 1
-#define NORMAL_ZORRA   2
-#define NORMAL_ARANA   3
-#define NORMAL_LAGARTIJA  4
-#define NORMAL_SIN_IMPACTO 5
-
-#define PUNTOS_FIGURA_SIN_DEFINIR 0
-#define PUNTOS_NORMAL_CONEJO 45
-#define PUNTOS_NORMAL_ZORRA  35
-#define PUNTOS_NORMAL_ARANA  25
-#define PUNTOS_NORMAL_LAGARTIJA 15
-#define PUNTOS_NORMAL_SIN_IMPACTO 0
-
-// Bono
-#define BONO_CORAZON 1
-#define BONO_OSO 2
-#define BONO_RANA 3 
-#define BONO_CONEJO 4
-#define BONO_SIN_IMPACTO 5
-
-#define PUNTOS_BONO_CORAZON 95
-#define PUNTOS_BONO_OSO 70
-#define PUNTOS_BONO_RANA 50
-#define PUNTOS_BONO_CONEJO 45
-#define PUNTOS_BONO_SIN_IMPACTO 0
-
-
-//Castigo
-#define CASTIGO_UNICORNIO 1
-#define CASTIGO_BOTELLA 2
-#define CASTIGO_COPA 3
-#define CASTIGO_SIN_IMPACTO 5
-
-#define PUNTOS_CASTIGO_UNICORNIO -300
-#define PUNTOS_CASTIGO_BOTELLA -200
-#define PUNTOS_CASTIGO_COPA -100
-#define PUNTOS_CASTIGO_SIN_IMPACTO 0
-
-
-//Movimiento de figuras
-#define IZQUIERDA 0
-#define DERECHA   1
-uint8_t lado =IZQUIERDA;
-uint8_t contador_vueltas =1;
-
-
-/*FIN DE ANEXO 3MAYO2025*/
-
+#define READY_JUGADOR 2
 int tipo_tiro_recibido= TIRO_ACTIVO;
 int no_paquete=2000;
-int16_t valor_puntuacion_figura=0;
 
 // variable tipo esp_now_info_t para almacenar informacion del compañero
 esp_now_peer_info_t peerInfo;
@@ -369,8 +255,8 @@ int buttonstate=0;
 
 // definicion de tira led
 uint8_t led_inicio=0;
-#define NUMPIXELS 256
-Adafruit_NeoPixel tira(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
+#define NUMPIXELS 31
+Adafruit_NeoPixel strip(NUMPIXELS,pin_leds,NEO_RGB+NEO_KHZ800);
 int prende_leds=SI;
 
 
@@ -381,15 +267,15 @@ void Inicia_ESP_NOW()
   if (esp_now_init() != ESP_OK)
     {
       Serial.println("Error initializing ESP-NOW");
-      tira.setPixelColor(0,tira.Color(250,0,0));
-      tira.show();
+      strip.setPixelColor(0,strip.Color(250,0,0));
+      strip.show();
       return;
     }
   else
   {
       Serial.println("initializing ESP-NOW  OK");
-      tira.setPixelColor(0,tira.Color(0,0,250));
-      tira.show();
+      strip.setPixelColor(0,strip.Color(0,0,250));
+      strip.show();
   }
 }
 
@@ -424,15 +310,15 @@ void Peer_Monitor_En_Linea()
   delay(500);
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
      {
-        tira.setPixelColor(1,tira.Color(250,0,0));
-        tira.show();
+        strip.setPixelColor(1,strip.Color(250,0,0));
+        strip.show();
         Serial.println("Failed to add peer Monitor");
         return;
      }
    else
       { 
-        tira.setPixelColor(1,tira.Color(0,0,250));
-        tira.show();
+        strip.setPixelColor(1,strip.Color(0,0,250));
+        strip.show();
         Serial.println("Add Peer Monitor OK");
 
       }
@@ -449,22 +335,25 @@ void Test_Conexion_Diana()
     datos_enviados.n=no_paquete;
     datos_enviados.t=TEST;
     datos_enviados.c=1;   //SE MANDA led_1 PARA TEST
-    datos_enviados.p=JUGADOR_NO_ACTIVO; // JUGADOR 0 NO ACTIVO
+    datos_enviados.p=0; // JUGADOR 0 NO ACTIVO
+    datos_enviados.tiempo=0; // para regresar el tiempo
+    datos_enviados.f=0; // FIGURA - solo por mandar dato en el campo
+    datos_enviados.s=0;  // SHOT - NUMERO DE TIRO, SOLO DE RELLENO
 
   // monitor
     esp_err_t result4 = esp_now_send(broadcastAddressMonitor, (uint8_t *) &datos_enviados, sizeof(structura_mensaje));
     delay(500);
     if (result4 == ESP_OK) 
      {
-      tira.setPixelColor(2,tira.Color(0,0,250));
-      tira.show();
+      strip.setPixelColor(2,strip.Color(0,0,250));
+      strip.show();
       Serial.println("TEST-Envio a Monitor OK");
      }
 
     else 
      {
-      tira.setPixelColor(2,tira.Color(250,0,0));
-      tira.show();
+      strip.setPixelColor(2,strip.Color(250,0,0));
+      strip.show();
       Serial.println("TEST-Error enviando a Monitor");
      }
 }
@@ -482,27 +371,16 @@ int8_t led_3=0;
 int case_estado_diana =APAGADO;
 
 
-// revisar la frecuencia con osciloscopio del disparo
+
 /* variables para analisis de frecuencia */
 ulong frecuencia_disparo=10000;
 ulong frecuencia_apunta=5000;
 
-ulong frecuencia_disparo_tiro_publico=0 ; 
-ulong frecuencia_apunta_tiro_publico =0 ; 
- 
 ulong frecuencia_disparo_tiro_verde=1300 ; //2500;
 ulong frecuencia_apunta_tiro_verde= 800 ; // 2000;
 
 ulong frecuencia_disparo_tiro_azul =1300;
 ulong frecuencia_apunta_tiro_azul= 800;
-
-#define SIN_DETECCION 0
-#define APUNTA_VERDE 1
-#define DISPARO_VERDE 2
-#define APUNTA_AZUL 3
-#define DISPARO_AZUL 4
-uint8_t color_y_nivel_disparo=SIN_DETECCION;
-uint8_t figura_actual=FIGURA_SIN_DEFINIR;
 
 
 /* ----------------- ENVIO DE DATOS -----------------------------*/
@@ -589,12 +467,14 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   Serial.println("Tiro activo = "+String(datos_recibidos.t));
 
   // se guada tipo de tiro recibido para validar el rady de loc jugadores de contadores descendentes
+  tipo_tiro_recibido=datos_recibidos.t;
 
   // SE REGRESA JUGADOR READY PARA EVITAR ACUMULAR TIROS EN JUGADOR
 
-  if (datos_recibidos.t>=TIRO_ACTIVO)  // TIRO ACTIVO =1, JUGADOR READY =2 
+  if (datos_recibidos.t>=TIRO_ACTIVO)  // JUGADOR READY =2 TIRO ACTIVO =1
     { 
       Serial.println("RECEPCION PAQUETE"+String(datos_recibidos.n));
+
       //Serial.println("datos_recibidos.no_paquete ="+String(datos_recibidos.n));
       Serial.println("datos_recibidos.tipo_tiro ="+String(datos_recibidos.t));
       //Serial.println("datos_recibidos.color ="+String(datos_recibidos.c));
@@ -605,25 +485,47 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       //Serial.println("datos_recibidos.shot ="+String(datos_recibidos.s));
 
       datos_locales_diana.n= datos_recibidos.n;
-      datos_locales_diana.t =datos_recibidos.t; // recibe NORMAL, JUGADOR_READY para regresar el mismo estatus al Monitor
+      datos_locales_diana.t =datos_recibidos.t;
       datos_locales_diana.c =datos_recibidos.c;
       datos_locales_diana.d =datos_recibidos.d;
       datos_locales_diana.p =datos_recibidos.p;
       datos_locales_diana.tiempo=0.00;
-      //numero_calculado_de_tiro=31-datos_locales_diana.s; no aplica nueva version
+      datos_locales_diana.f =datos_recibidos.f; // figura CD001
+      datos_locales_diana.s =datos_recibidos.s; // no de disparo CD001
+      numero_calculado_de_tiro=31-datos_locales_diana.s;
+
       no_paquete++;
       pulsos=0;
+      switch (datos_locales_diana.c)
+        {
+          case GREEN:
+            //Serial.println("Programa color verde");
+            led_1=250;
+            led_2=0;
+            led_3=0;
+            frecuencia_apunta=frecuencia_apunta_tiro_verde;
+            frecuencia_disparo=frecuencia_disparo_tiro_verde;
+            break;
 
-      Asigna_Pixeles_Para_Definir_Color_Del_Fondo(datos_recibidos.c);
-      Asigna_Frecuencias_Base_Para_Tiro(datos_recibidos.pp,datos_recibidos.c);
+          case BLUE:
+            //Serial.println("Programa color azul");
+            led_1=0;
+            led_2=0;
+            led_3=250;
+            frecuencia_apunta=frecuencia_apunta_tiro_azul;
+            frecuencia_disparo=frecuencia_disparo_tiro_azul;
+            break;
 
+        }
       case_estado_diana=ENCENDIDO;
       Serial.println("Estado-diana= ENCENDIDO");
+
+
     }
 }
 
 //declaracion de funciones
-void Ponderacion_Y_Obtencion_De_Frecuencia2();
+void Analisis_De_Frecuencia2();
 void Califica_La_Frecuencia();
 void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
 void Test_Conexion_Diana();
@@ -657,20 +559,6 @@ void Enciende_Tira_Figuras();
 //Comun
 void  Enciende_Matriz_Led();
 
-// figuras
-void Matriz_Conejo();
-void Matriz_Zorra();
-void Matriz_Arana();
-void Matriz_Lagartija();
-void Matriz_TimeOut();
-void Matriz_Corazon();
-void Matriz_Oso();
-void Matriz_Rana();
-void Matriz_Unicornio();
-void Matriz_Botella();
-void Matriz_Copa();
-void Matriz_Sin_Castigo();
-
 //Contadores
 int i;
 /*-----------------------------------------------------------------------------*/
@@ -702,10 +590,10 @@ void setup()
   1Dic2024 no esta implementado en software para la versión 3.1 aun que la electronica ya esta lista 
   */
 
-  // inicia Neopixel tira
-  tira.begin();
-  tira.show();
-  tira.setBrightness(100);
+  // inicia Neopixel strip
+  strip.begin();
+  strip.show();
+  strip.setBrightness(100);
 
   // para iniciar el flasheo de la tira
   tiempo_inicial_leds=millis();
@@ -749,8 +637,6 @@ void setup()
 /* ------------------------inicio loop ----------------------------*/
 void loop() 
 { 
-
-
   // para switchear los parpadeos de las figuras 
   tiempo_actual_reloj_lento=millis();
   tiempo_actual_reloj_rapido=millis();
@@ -763,8 +649,7 @@ void loop()
       break;
 
     case ENCENDIDO:
-      /* code */
-      //PROCESO 2 valida si hay datos a enviar
+      //valida di hay datos a enviar
       if (enviar_datos==SI) // se habilita en Envia_resultados_al_monitor/ENVIA_PAQUETE 
         {
           Serial.println("ENVIO PAQUETE :"+String(datos_enviados.n));
@@ -776,31 +661,31 @@ void loop()
               Serial.println("Envio Paquete OK, intento : "+String(intentos_envio));
               Serial.println("Tiempo disparo (seg)   : "+String(datos_enviados.tiempo));
               enviar_datos=NO;
-              tira.clear();
-              tira.show();
+              strip.clear();
+              strip.show();
               for (int i=0; i<=3;++i)
-                {tira.setPixelColor(i,tira.Color(0,250,0));
+                {strip.setPixelColor(i,strip.Color(0,250,0));
                 }
-              tira.show();
+              strip.show();
             }
           else 
             {
               Serial.println("Error envio : "+String(intentos_envio));
               intentos_envio++;
               flujo_de_envio=PAUSA_REENVIO;
-              tira.clear();
-              tira.show();
-              tira.setPixelColor(1,tira.Color(0,250,0));
-              tira.setPixelColor(1,tira.Color(1,250,0));
-              tira.setPixelColor(1,tira.Color(2,250,0));
-              tira.show();
+              strip.clear();
+              strip.show();
+              strip.setPixelColor(1,strip.Color(0,250,0));
+              strip.setPixelColor(1,strip.Color(1,250,0));
+              strip.setPixelColor(1,strip.Color(2,250,0));
+              strip.show();
               previous_time_reenvio=millis();
             }
           Serial.println("");
           Serial.println("");
-        } // fin if enviar_datos
+        }
 
-      //PASO 1 proceso encendido
+      // proceso encendido
       switch (case_proceso_encendido)
         {
             case INICIA_STANDBYE:          
@@ -815,23 +700,13 @@ void loop()
             case INICIALIZA_TIEMPO:
                   tiempo_inicia_tiro=millis(); // incia tiempo del tiro
                   tiempo_inicial_leds=millis();
-                  tira.clear();
+                  strip.clear();
                   Serial.println("Inicializa tiempo (mseg): "+String(tiempo_inicia_tiro));
                   case_proceso_encendido=MONITOREA_DISPARO;
                   break;
 
             case MONITOREA_DISPARO:
-                  Ponderacion_Y_Obtencion_De_Frecuencia2();
-                  color_y_nivel_disparo=Calcula_Color_Y_Nivel_Del_Disparo();
-                  if (millis()%100==0) //paneo cada 100millisegundos
-                    {
-                      Switchea_Izquierda_Por_Derecha(); //activa movimiento patas cada 300 milisegundos
-                      figura_actual=Evalua_y_Dibuja_Figura(); //evalua y Dibuja figura cada 100 milisegundos
-                    }
-
-                    // CALIFICA FRECUENCIA POR PRIVADO O PUBLICO PARA ENCENDER EL BLANCO PARA USUARIO, APUNTAR Y DISPARO
-                    //EENCIENDA LAS FIGURAS DE USURIOA A TIRAR CON RELOJES DIFERENTES PARA USUARIO, APUNTAR Y DISPARO
-                    //Nueva void Califica_el_color y nivel disparo par encender figuras apunta o disparo(); 
+                  Analisis_De_Frecuencia2();
                   Califica_La_Frecuencia();
                   Enciende_Tira_Figuras (); //ED001 SE CAMBIO Enciende_Tira();
                   if (posicion_nueva==DISPARO_DETECTADO) //posicion nueva es modificado en califica frecuencia
@@ -889,7 +764,8 @@ void loop()
 
 
 /*-----------------------------------------------*/
-void Envia_Resultados_Al_Monitor()
+void 
+Envia_Resultados_Al_Monitor()
 { Serial.println("Envia resultados al monitor") ;              
   switch (flujo_de_envio)
     {
@@ -898,10 +774,9 @@ void Envia_Resultados_Al_Monitor()
         break;
       case PREPARA_PAQUETE_ENVIO:
         datos_enviados.n =datos_locales_diana.n;
-        datos_enviados.t=datos_locales_diana.t; //TEST=0, TIRO_ACTIVO=1, JUGADOR_READY=2 es es el recibido en el mensaje de llegada
-        //datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
+        datos_enviados.t=TIRO_ACTIVO; // TEST SI O TEST NO->VALIDO
         // regresa el tipo del tiro recibido
-        //datos_enviados.t=tipo_tiro_recibido;
+        datos_enviados.t=tipo_tiro_recibido;
         datos_enviados.d=datos_locales_diana.d; //diana
         datos_enviados.c=datos_locales_diana.c;   // color disparo
         datos_enviados.p=datos_locales_diana.p;
@@ -923,12 +798,12 @@ void Envia_Resultados_Al_Monitor()
               }
             else // manda mensaje de error
               {
-                tira.clear();
+                strip.clear();
                 for (int i=2;i<=32;i++)
                   {
-                    tira.setPixelColor(i,tira.Color(0,250,0));
+                    strip.setPixelColor(i,strip.Color(0,250,0));
                   }
-                tira.show();
+                strip.show();
                 Serial.println("APAGA DIANA en PAUSA REENVIO");
                 case_estado_diana=APAGADO;
                 captura_tiempo_inicial=NO;
@@ -997,7 +872,7 @@ void Enciende_Tira ()
 
 
 /* --------------------------------------------------------*/
-void Ponderacion_Y_Obtencion_De_Frecuencia2()
+void Analisis_De_Frecuencia2()
 {
   tiempo_actual_muestreo=millis();
   // define el rango de tiempo de cada rango de muestreo
@@ -1079,44 +954,6 @@ void Califica_La_Frecuencia()
     }
 }
 
-/* ----------------------------------------------------- */
-uint8_t Calcula_Color_Y_Nivel_Del_Disparo()
-{     
-  uint8_t resultado=0;   
-  if (cambio_la_frecuencia==SI)
-    { 
-      //evalua sin deteccion
-      if ((nueva_frecuencia<(frecuencia_apunta_tiro_verde-500)))
-        {
-          resultado= SIN_DETECCION;
-        }
-      //evalua apunta verde
-      if (nueva_frecuencia>(frecuencia_apunta_tiro_verde-500) && (nueva_frecuencia<(frecuencia_apunta_tiro_verde+500)))
-        {
-          resultado= APUNTA_VERDE;
-        }
-      //evalua disparo_verd
-      if (nueva_frecuencia>(frecuencia_disparo_tiro_verde-500) && (nueva_frecuencia<(frecuencia_disparo_tiro_verde+500)))
-        {
-          resultado= DISPARO_VERDE;
-        }
-      //evalua apunta AZUL
-      if (nueva_frecuencia>(frecuencia_apunta_tiro_azul-500) && (nueva_frecuencia<(frecuencia_apunta_tiro_azul+500)))
-        {
-          resultado= APUNTA_AZUL;
-        }
-      //evalua disparo AZUL
-      if (nueva_frecuencia>(frecuencia_disparo_tiro_azul-500) && (nueva_frecuencia<(frecuencia_disparo_tiro_azul+500)))
-        {
-          resultado= DISPARO_AZUL;
-        }
-      cambio_la_frecuencia=NO; //para generar un perido para la re-evaluacion de la frecuencia
-      return resultado;
-    }
-}
-
-
-
 
 
 /*--------------------------------------------------------*/
@@ -1124,12 +961,12 @@ void Espera_Tira_Leds()
 { 
   if (prende_leds==SI)
     { 
-      tira.clear();
-      tira.setPixelColor(8-led_inicio,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(16-led_inicio,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(24-led_inicio,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(32-led_inicio,tira.Color(led_1,led_2,led_3));
-      tira.show();
+      strip.clear();
+      strip.setPixelColor(8-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(16-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(24-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(32-led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.show();
       prende_leds=NO;
     }
 }
@@ -1139,20 +976,20 @@ void Apunta_Tira_Leds()
 { 
   if (prende_leds==SI)
     {
-      tira.clear();
-      tira.setPixelColor(led_inicio,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+1,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+2,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+8,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+9,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+10,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+16,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+17,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+18,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+24,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+25,tira.Color(led_1,led_2,led_3));
-      tira.setPixelColor(led_inicio+26,tira.Color(led_1,led_2,led_3));
-      tira.show();
+      strip.clear();
+      strip.setPixelColor(led_inicio,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+1,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+2,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+8,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+9,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+10,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+16,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+17,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+18,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+24,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+25,strip.Color(led_1,led_2,led_3));
+      strip.setPixelColor(led_inicio+26,strip.Color(led_1,led_2,led_3));
+      strip.show();
       prende_leds=NO;
     }
 }
@@ -1160,16 +997,16 @@ void Apunta_Tira_Leds()
 /* ---------------------------------------------------------------------*/
 void Disparo_Tira_Leds()
 {     int i;
-      tira.setBrightness(100);
+      strip.setBrightness(100);
       for(i=0;i<=39;i++)
       {
-      tira.setPixelColor(i,tira.Color(250,250,250));
+      strip.setPixelColor(i,strip.Color(250,250,250));
       }
-      tira.show();
+      strip.show();
       delay(20);
-      tira.setBrightness(100);
-      tira.clear();
-      tira.show();
+      strip.setBrightness(100);
+      strip.clear();
+      strip.show();
      
 
 }
@@ -1192,14 +1029,14 @@ nuevas fucniones 2 de febrero 2025
 
 
 
- 
+
 */
 /*--------------------------------------------------------*/
 void Espera_Tira_Leds_Figuras()
 { 
   if (Reloj_Lento()==DETECTA_CAMBIO_ESTADO_RELOJ)
     {
-      switch (UNO)
+      switch (datos_locales_diana.f)
           {
             case BICHOS:
                 /*CODE*/
@@ -1224,7 +1061,7 @@ void Apunta_Tira_Leds_Figuras()
 { 
   if (Reloj_Rapido()==DETECTA_CAMBIO_ESTADO_RELOJ)
     {
-      switch (UNO)
+      switch (datos_locales_diana.f)
           {
             case BICHOS:
                 /*CODE*/
@@ -1821,25 +1658,25 @@ void  Enciende_Matriz_Led()
       switch (Vector_Matriz_Led[numero_led])
         {
           case ATRAS: // NEGRO
-            tira.setPixelColor(numero_led,tira.Color(color_atras_1,color_atras_2,color_atras_3));
+            strip.setPixelColor(numero_led,strip.Color(color_atras_1,color_atras_2,color_atras_3));
             break;
 
           case TINTA: // VERDE O AZUL
             /* code */
-            tira.setPixelColor(numero_led,tira.Color(color_tinta_1,color_tinta_2,color_tinta_3));
+            strip.setPixelColor(numero_led,strip.Color(color_tinta_1,color_tinta_2,color_tinta_3));
             break;
 
           case BASE: 
             /*CODE*/
-            tira.setPixelColor(numero_led,tira.Color(color_base_1,color_base_2,color_base_3));            
+            strip.setPixelColor(numero_led,strip.Color(color_base_1,color_base_2,color_base_3));            
             break;
 
           case RESALTA:
-            tira.setPixelColor(numero_led,tira.Color(color_resalta_1,color_resalta_2,color_resalta_3));            
+            strip.setPixelColor(numero_led,strip.Color(color_resalta_1,color_resalta_2,color_resalta_3));            
             break;
         }
     }
-  tira.show(); 
+  strip.show(); 
 }
 
 /* --------------------------------------------------------*/
@@ -1886,17 +1723,17 @@ int Reloj_Rapido() //CD001
 /* ---------------------------------------------------------------------*/
 void Disparo_Tira_Leds_Figuras()
 {    
-      tira.setBrightness(100);
-      tira.clear();
+      strip.setBrightness(100);
+      strip.clear();
       for(int i=0;i<=16;i++)
       {
-      tira.setPixelColor(i,tira.Color(250,250,250));
+      strip.setPixelColor(i,strip.Color(250,250,250));
       }
-      tira.show();
+      strip.show();
       delay(10);
-      tira.setBrightness(100);
-      tira.clear();
-      tira.show();
+      strip.setBrightness(100);
+      strip.clear();
+      strip.show();
      
 
 }
@@ -1917,303 +1754,4 @@ void Enciende_Tira_Figuras()
         Disparo_Tira_Leds_Figuras();
         break;
   }
-}
-
-void  Asigna_Pixeles_Para_Definir_Color_Del_Fondo(uint8_t local_color)
-{
-  switch (datos_locales_diana.c)
-  {
-    case RED:
-      /*code*/
-      //Serial.println("Programa color rojo para castigos");
-      led_1=0;
-      led_2=250;
-      led_3=0;
-      break;           
-
-    case GREEN:
-      //Serial.println("Programa color verde");
-      led_1=250;
-      led_2=0;
-      led_3=0;
-      break;
-
-    case BLUE:
-      //Serial.println("Programa color azul");
-      led_1=0;
-      led_2=0;
-      led_3=250;
-      break;
-
-  } 
-}
-
-
-void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_tipo_de_tiro, uint8_t local_color)
-{
-
-  switch (local_tipo_de_tiro)
-  {
-    case PRIVADO:
-      /* code */
-      switch (local_color)
-      {
-        case GREEN:
-          /*code*/
-          frecuencia_apunta=frecuencia_apunta_tiro_verde;
-          frecuencia_disparo=frecuencia_disparo_tiro_verde;
-          break;
-
-        case BLUE:
-          /*code*/
-          frecuencia_apunta=frecuencia_apunta_tiro_azul;
-          frecuencia_disparo=frecuencia_disparo_tiro_azul;
-          break;
-      }
-      break;
-
-    case PUBLICO:
-      /* code */
-      frecuencia_apunta= frecuencia_apunta_tiro_publico;
-      frecuencia_disparo=frecuencia_disparo_tiro_publico;
-      break;
-  }
-
-}
-
-
-uint8_t Evalua_y_Dibuja_Figura()
-{
-  uint8_t resultado=FIGURA_SIN_DEFINIR;
-  switch (datos_recibidos.tf) // tipo de figura
-  {
-    case NORMAL:
-      /*case*/
-      resultado=Evalua_Figura_Normal();
-      break;
-    case BONO:
-      /*case*/
-      resultado=Evalua_Figura_Bono();
-      break;
-    case CASTIGO:
-      /*code*/
-      resultado=Evalua_Figura_Castigo();
-      break;
-  }
-  return resultado;
-}
-
-/*------------------------------------------------------------------------*/
-uint8_t Evalua_Figura_Normal()
-{ 
-  uint8_t resultado_figura=FIGURA_SIN_DEFINIR;
-  int rango = millis()-tiempo_inicia_tiro; 
-
-  //clasifica la figura dependiendo del tiempo df (velocidad de cambio figura)
-
-  if (rango<datos_recibidos.vf)
-    {
-      resultado_figura=NORMAL_CONEJO;
-      valor_puntuacion_figura=PUNTOS_NORMAL_CONEJO;
-      Matriz_Conejo();
-    }
-  else
-    {
-      if (rango<(datos_recibidos.vf*2))
-        {
-          resultado_figura=NORMAL_ZORRA;
-          valor_puntuacion_figura=PUNTOS_NORMAL_ZORRA;
-          Matriz_Zorra();
-        }
-      else
-        {
-          if (rango<(datos_recibidos.vf*3))
-            {
-              resultado_figura=NORMAL_ARANA;
-              valor_puntuacion_figura=PUNTOS_NORMAL_ARANA;
-              Matriz_Arana();
-            }
-          else
-          {
-            if (rango<(datos_recibidos.vf*4))
-              {
-                resultado_figura=NORMAL_LAGARTIJA;
-                valor_puntuacion_figura=PUNTOS_NORMAL_LAGARTIJA;
-                Matriz_Lagartija();
-              }
-            else
-              {
-                resultado_figura=NORMAL_SIN_IMPACTO;
-                valor_puntuacion_figura=PUNTOS_NORMAL_SIN_IMPACTO; 
-                Matriz_TimeOut();               
-              } //end if vf*4
-          }//end if vf*3
-        } //end if vf*2
-    } //end if vf
-    tira.show();
-    return resultado_figura;
-}
-
-/*-----------------------------------------------------------------------*/
-uint8_t Evalua_Figura_Bono()
-{
-  uint8_t resultado=FIGURA_SIN_DEFINIR;
-  int rango = millis()-tiempo_inicia_tiro; 
-  if (rango<(datos_recibidos.vf*2))
-    {
-      switch (datos_recibidos.xf)
-      {
-        case BONO_CORAZON:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_BONO_CORAZON;  
-          Matriz_Corazon(); 
-          break;
-
-        case BONO_OSO:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_BONO_OSO;  
-          Matriz_Oso(); 
-          break; 
-
-        case BONO_RANA:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_BONO_RANA; 
-          Matriz_Rana();  
-          break;  
-
-        case BONO_CONEJO:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_BONO_CONEJO;
-          Matriz_Conejo();   
-          break;         
-      }
-    }
-  else
-    {
-      resultado=BONO_SIN_IMPACTO;
-      valor_puntuacion_figura=PUNTOS_BONO_SIN_IMPACTO; 
-      Matriz_TimeOut();  
-    }
-  tira.show();
-  return resultado;
-}
-
-uint8_t Evalua_Figura_Castigo()
-{
-  uint8_t resultado=FIGURA_SIN_DEFINIR;
-  int rango = millis()-tiempo_inicia_tiro; 
-  if (rango<(datos_recibidos.vf*2))
-    {
-      switch (datos_recibidos.xf)
-      {
-        case CASTIGO_UNICORNIO:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_CASTIGO_UNICORNIO;
-          Matriz_Unicornio();   
-          break;
-
-        case CASTIGO_BOTELLA:
-          resultado=datos_recibidos.xf;
-          valor_puntuacion_figura=PUNTOS_CASTIGO_BOTELLA;
-          Matriz_Botella();   
-          break; 
-
-        case CASTIGO_COPA:
-          resultado=datos_recibidos.xf;
-
-          valor_puntuacion_figura=PUNTOS_CASTIGO_COPA; 
-          Matriz_Copa();  
-          break;         
-      }
-    }
-  else
-    {
-      resultado=CASTIGO_SIN_IMPACTO;
-      valor_puntuacion_figura=PUNTOS_CASTIGO_SIN_IMPACTO;
-      Matriz_Sin_Castigo();   
-    }
-  tira.show();
-  return resultado;
-}
-
-
-void Switchea_Izquierda_Por_Derecha()
-{
-  if (contador_vueltas>=3) // mueve las patas de los dibujos cada 300 milisegundos
-    {
-      if (lado==IZQUIERDA)
-        {
-          lado=DERECHA;
-        }
-      else
-        {
-          lado=IZQUIERDA;
-        }
-      contador_vueltas=0;
-    }
-  else
-    {
-      contador_vueltas++;
-    }
-}
-
-/*----------------*/
-void Matriz_Conejo()
-{
-
-}
-
-void Matriz_Zorra()
-{
-
-}
-
-void Matriz_Arana()
-{
-
-}
-
-void Matriz_Lagartija()
-{
-
-}
-
-void Matriz_TimeOut()
-{
-
-}
-
-void Matriz_Corazon()
-{
-
-}
-
-void Matriz_Oso()
-{
-
-}
-
-void Matriz_Rana()
-{
-
-}
-
-void Matriz_Unicornio()
-{
-
-}
-
-void Matriz_Botella()
-{
-
-}
-
-void Matriz_Copa()
-{
-
-}
-
-void Matriz_Sin_Castigo()
-{
-
 }
