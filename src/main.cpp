@@ -1,3 +1,6 @@
+// DIANA_V3
+//18AGOSTO2025
+
 #include <Arduino.h>
 //#include "nvs.h"
 //#include "nvs_flash.h"
@@ -12,6 +15,13 @@
 //# include <Adafruit_SPIDevice.h>
 
 /*
+
+18 DE AGOSTO DE 2025
+Se instala en otra maquina y se configura, ya no manda errores
+al parecer actualizo a la ultima versión
+Se modificara para soportar el cambio de sentido en la matriz del display
+ya que se tuvo que modificar las posiciones porque la matriz no es en zifzag, sino
+en lineas (matriz comprada en amazon)
 
 CD003 5 febrero 
 Se debe revisar que llegue la figura seleccionada en monitor y el numero dedisparo
@@ -123,7 +133,6 @@ uint16_t tiempo_espera_salida=500;  // milisegundos
 // varibles para condiciones de manejo del tiro
 #define PRIVADO 0
 #define PUBLICO 1
-
 
 
 
@@ -241,7 +250,7 @@ uint8_t tipo_de_figura=TIPO_NORMAL;
 #define CALIBRA_UNO  1
 
 //Movimiento de figuras
-#define IZQUIERDA 0
+#define IZQUIERDA 0 //Sentido del movimiento
 #define DERECHA   1
 uint8_t lado =IZQUIERDA;
 uint8_t contador_vueltas =1;
@@ -299,6 +308,7 @@ void readMacAddress()
   esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
   if (ret == ESP_OK) 
     {
+      Serial.print("Direccion de esta Diana :");
       Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
                     baseMac[0], baseMac[1], baseMac[2],
                     baseMac[3], baseMac[4], baseMac[5]);
@@ -483,6 +493,89 @@ uint8_t propietario_alternativo_id=0;
 uint8_t propietario_alternativo_color=0;
 
 
+
+//declaracion de funciones
+void Ponderacion_Y_Obtencion_De_Frecuencia2();
+void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
+void Test_Conexion_Diana();
+void readMacAddress();
+void Inicia_ESP_NOW();
+void Peer_Monitor_En_Linea();
+void Envia_Resultados_Al_Monitor();
+
+int reloj_1seg();
+int creloj_500mseg();
+int reloj_200mseg();
+int creloj_100mseg();
+
+
+// figuras
+void Matriz_Conejo();
+void Matriz_Zorra();
+void Matriz_Arana();
+void Matriz_Lagartija();
+void Matriz_TimeOut();
+void Matriz_Corazon();
+void Matriz_Oso();
+void Matriz_Rana();
+void Matriz_Unicornio();
+void Matriz_Botella();
+void Matriz_Copa();
+void Matriz_Sin_Castigo();
+
+// Definiciones faltantes 18agosto 2025
+void  Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color);
+void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_color);
+void Actualiza_Relojes();
+uint8_t  Calcula_Color_Y_Nivel_Del_Disparo();
+void Switchea_Izquierda_Por_Derecha();
+uint8_t Evalua_y_Dibuja_Figura();
+void Aro_Sin_Deteccion();
+void Aro_Apuntando();
+void Aro_Disparo();
+void Reinicia_Todas_Las_Variables_Al_Termnar();
+uint8_t Evalua_Figura_Normal();
+void Matriz_Calibra();
+void Asigna_Color_Basandose_En_Color_Recibido_De_Monitor();
+void Aro_Sin_Deteccion_Secuencia();
+void Matriz_Limpia_Secuencias();
+void Matriz_Aro_1();
+void Matriz_Aro_2();
+void Matriz_Aro_3();
+void Matriz_Aro_4();
+void Matriz_Aro_5();
+void Matriz_Aro_6();
+void Matriz_Aro_7();
+void Aro_Disparo_Secuencia();
+void Aro_Apuntando_Secuencia();
+void Matriz_Colorea_Apuntando();
+void Matriz_Aro_1_Apuntado();
+void Matriz_Aro_2_Apuntado();
+void Matriz_Aro_3_Apuntado();
+void Matriz_Aro_4_Apuntado();
+void Matriz_Aro_5_Apuntado();
+void Matriz_Aro_6_Apuntado();
+void Matriz_Aro_7_Apuntado();
+uint8_t Evalua_Figura_Castigo();
+uint8_t Evalua_Figura_Bono();
+void  Arma_Paquete_De_Envio();
+uint8_t Evalua_Figura_Calibra();
+
+
+
+void Matriz_Aro_1_Disparo();
+void Matriz_Aro_2_Disparo();
+void Matriz_Aro_3_Disparo();
+void Matriz_Aro_4_Disparo();
+void Matriz_Aro_5_Disparo();
+void Matriz_Aro_6_Disparo();
+void Matriz_Aro_7_Disparo();
+
+//auxiliar para reconocer la matriz, en produccion debe quitarse la llamada en el setup 
+void Barre_Matriz();
+
+
+
 /* -------------------- RECEPCION DE DATOS -----------------------*/
 // Callback when data is received
 void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
@@ -523,34 +616,10 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   }
 }
 
-//declaracion de funciones
-void Ponderacion_Y_Obtencion_De_Frecuencia2();
-void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
-void Test_Conexion_Diana();
-void readMacAddress();
-void Inicia_ESP_NOW();
-void Peer_Monitor_En_Linea();
-void Envia_Resultados_Al_Monitor();
-
-int reloj_1seg();
-int reloj_500mseg();
-int reloj_200mseg();
-int reloj_100mseg();
 
 
-// figuras
-void Matriz_Conejo();
-void Matriz_Zorra();
-void Matriz_Arana();
-void Matriz_Lagartija();
-void Matriz_TimeOut();
-void Matriz_Corazon();
-void Matriz_Oso();
-void Matriz_Rana();
-void Matriz_Unicornio();
-void Matriz_Botella();
-void Matriz_Copa();
-void Matriz_Sin_Castigo();
+
+
 
 //Contadores
 int i;
@@ -572,6 +641,17 @@ void Asigna_Pantalla()
     { 
     Pantalla[posicion_led]=posicion_led;
     } 
+}
+
+
+void Barre_Matriz()
+{
+  for (int i=0; i<=255;++i)
+    {
+      tira.setPixelColor(i,tira.Color(0,255,0));
+      tira.show();
+      delay(100);
+    }
 }
 
 
@@ -599,12 +679,13 @@ void setup()
   */
 
   // inicia Neopixel tira
+
   tira.begin();
   tira.show();
   tira.setBrightness(100);
 
-  // para iniciar el flasheo de la tira
-
+  // para iniciar el flasheo de la tira para pruebas de sentido de matrix
+  //Barre_Matriz();
 
   // inicia comunicacion serial
   Serial.begin(115200);
@@ -645,8 +726,7 @@ void setup()
 void loop() 
 { 
 
-  Actualiza_Relojes();
-    //Control Diana
+  Actualiza_Relojes(); //Control Diana
   switch (case_estado_diana)
   {
     case APAGADO:
@@ -967,8 +1047,8 @@ uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
 
         }
       cambio_la_frecuencia=NO; //para generar un perido para la re-evaluacion de la frecuencia
-      return resultado;
     }
+      return resultado;
 }
 
 
@@ -996,7 +1076,7 @@ int reloj_1seg() //CD001
 }
 
 /* -------------------------------------------------------*/
-int reloj_500mseg() //CD001
+int creloj_500mseg() //CD001
 {
   tiempo_actual_reloj_500mseg=millis();
   if ((tiempo_inicial_reloj_500mseg+500)<tiempo_actual_reloj_500mseg)
@@ -1029,7 +1109,7 @@ int reloj_200mseg() //CD001
 }
 
 
-int reloj_100mseg() //CD001
+int creloj_100mseg() //CD001
 {
   tiempo_actual_reloj_100mseg=millis();
   if ((tiempo_inicial_reloj_100mseg+100)<tiempo_actual_reloj_100mseg)
