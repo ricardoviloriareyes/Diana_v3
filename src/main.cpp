@@ -176,7 +176,8 @@ typedef struct structura_mensaje
 /* fin de importacion*/
 
 structura_mensaje datos_enviados;
-structura_mensaje datos_recibidos;
+structura_mensaje 
+datos_recibidos;
 structura_mensaje datos_locales_diana;  // para usar en diana
 
 #define TEST 0
@@ -400,12 +401,13 @@ ulong frecuencia_apunta=5000;
 
 ulong frecuencia_disparo_tiro_publico=0 ; 
 ulong frecuencia_apunta_tiro_publico =0 ; 
- 
-ulong frecuencia_disparo_tiro_verde=1300 ; //1300;
-ulong frecuencia_apunta_tiro_verde= 800 ; // 800;
 
-ulong frecuencia_disparo_tiro_azul =1300; //1300
-ulong frecuencia_apunta_tiro_azul= 800; //800
+
+// los datos de las frecuencias se multiplican por 10 para obtener la frecuencia central
+ulong frecuencia_apunta_tiro_verde= 100 ; //1KH
+ulong frecuencia_disparo_tiro_verde=150 ; //1.5KH
+ulong frecuencia_apunta_tiro_azul= 200;  //2KH
+ulong frecuencia_disparo_tiro_azul =250; //2.5 KH
 
 #define SIN_DETECCION 0
 #define APUNTA_VERDE 1
@@ -474,16 +476,16 @@ int captura_tiempo_inicial=SI;
 
 // contadores para relojes de encendido y apagado tiras con figuras
 
-volatile unsigned long tiempo_inicial_reloj_1seg=0;
+volatile unsigned long tiempo_inicial_reloj_1seg=millis();
 volatile unsigned long tiempo_actual_reloj_1seg=0;
 
-volatile unsigned long tiempo_inicial_reloj_500mseg=0;
+volatile unsigned long tiempo_inicial_reloj_500mseg=millis();;
 volatile unsigned long tiempo_actual_reloj_500mseg=0;
 
-volatile unsigned long tiempo_inicial_reloj_200mseg=0;
+volatile unsigned long tiempo_inicial_reloj_200mseg=millis();
 volatile unsigned long tiempo_actual_reloj_200mseg=0;
 
-volatile unsigned long tiempo_inicial_reloj_100mseg=0;
+volatile unsigned long tiempo_inicial_reloj_100mseg=millis();
 volatile unsigned long tiempo_actual_reloj_100mseg=0;
 
 
@@ -644,14 +646,17 @@ void Asigna_Pantalla()
 }
 
 
+
 void Barre_Matriz()
 {
   for (int i=0; i<=255;++i)
     {
       tira.setPixelColor(i,tira.Color(0,255,0));
       tira.show();
-      delay(100);
+      delay(10);
     }
+    tira.clear();
+    tira.show();
 }
 
 
@@ -685,7 +690,7 @@ void setup()
   tira.setBrightness(100);
 
   // para iniciar el flasheo de la tira para pruebas de sentido de matrix
-  //Barre_Matriz();
+  Barre_Matriz();
 
   // inicia comunicacion serial
   Serial.begin(115200);
@@ -716,7 +721,7 @@ void setup()
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
   esp_now_register_send_cb(OnDataSent);
 
-
+   Actualiza_Relojes(); //Control Diana
 
 } // fin setup
 
@@ -726,7 +731,7 @@ void setup()
 void loop() 
 { 
 
-  Actualiza_Relojes(); //Control Diana
+  //Ponderacion_Y_Obtencion_De_Frecuencia2();
   switch (case_estado_diana)
   {
     case APAGADO:
@@ -741,7 +746,7 @@ void loop()
         {
             case INICIA_STANDBYE:
                   //Reinicia matriz para analisis de frecuencia          
-                  //Serial.println("reinicia frecuencias");
+                  Serial.println("reinicia frecuencias");
                   for (int i=0; i<=9;++i)
                   {
                     muestra[i]=0;
@@ -763,18 +768,44 @@ void loop()
                   //Encuentra a que color y valor que corresponde el laser detectado
                   valor_y_color_del_laser=Calcula_Color_Y_Nivel_Del_Disparo();
                   //el valor de "valor_y_color_laser"--> SIN_RESULTADO, APUNTA_VERDE, APUNTA_AZUL, DISPARO_VERDE, DISPARO_AZUL
- 
-                  // figura de fondo la imprime c/200seg par dar movimientos cn base al tiempo recibido 
                   if (reloj_200mseg()==DETECTA_CAMBIO_ESTADO_RELOJ)
                     {
-                      //Dibuja figura y establece su valor en ese momento
-                      Switchea_Izquierda_Por_Derecha(); //activa movimiento patas cada 300 milisegundos
-                      figura_actual=Evalua_y_Dibuja_Figura(); //evalua y Dibuja figura cada 100 milisegundos
-                      tira.show(); 
+                      switch (valor_y_color_del_laser)
+                      {
+                        case SIN_DETECCION:
+                          /* code */
+                          // figura de fondo la imprime c/200seg par dar movimientos cn base al tiempo recibido 
+                          //Dibuja figura y establece su valor en ese momento
+                          Switchea_Izquierda_Por_Derecha(); //activa movimiento patas cada 200 milisegundos
+                          figura_actual=Evalua_y_Dibuja_Figura(); //evalua y Dibuja figura cada 100 milisegundos
+                          tira.show(); 
+                          break;
+                        
+                        case APUNTA_VERDE:
+                          /*code*/
+                          Aro_Apuntando();
+                          tira.show(); 
+                          break;
+                        
+                        case DISPARO_VERDE:
+                          /*code*/
+                          break;
+                        
+                        case APUNTA_AZUL:
+                          /*code*/
+                          Aro_Apuntando();
+                          tira.show(); 
+                          break;  
+                        case DISPARO_AZUL:
+                          /*code*/
+                          break;   
+                      }
                     }
 
+
                    //En espera de un laser
-                  if (valor_y_color_del_laser==SIN_DETECCION) //SIN_DETECCION=0
+                   /*
+                    if (valor_y_color_del_laser==SIN_DETECCION) //SIN_DETECCION=0
                         {
                           if (reloj_200mseg()==DETECTA_CAMBIO_ESTADO_RELOJ)
                           {
@@ -782,16 +813,9 @@ void loop()
                           tira.show();                            
                           }
                         }
+                   */
 
-                  //Detecta un laser apuntando
-                  if ((valor_y_color_del_laser==APUNTA_VERDE) || (valor_y_color_del_laser==APUNTA_AZUL))
-                          {
-                            if (reloj_200mseg()==DETECTA_CAMBIO_ESTADO_RELOJ)
-                            {
-                              Aro_Apuntando();
-                              tira.show();                              
-                            }
-                          }
+
 
                   // Detecta un laser disparando
                      if ((valor_y_color_del_laser==DISPARO_VERDE) || (valor_y_color_del_laser==DISPARO_AZUL))
@@ -805,8 +829,14 @@ void loop()
                     {
                        // marca el tiempo final del tiro
                       tiempo_termina_tiro=millis(); 
-
-                      //Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
+                      if (posicion_nueva==DISPARO_DETECTADO)
+                        {
+                          Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
+                        }
+                      else 
+                        {
+                          Serial.println("salir_por_timeout==SI");
+                        }
                       //Sela del MONITOREO  y selecciona ENVIO DE RESULTADOS
                       case_proceso_encendido=ENVIA_RESULTADOS;
                       flujo_de_envio=PREPARA_PAQUETE_ENVIO;
@@ -866,6 +896,8 @@ void loop()
 }
 // FIN  loop ---------------------------------------------------
 
+
+
 void Reinicia_Todas_Las_Variables_Al_Termnar()
 {
     // finaliza envio
@@ -913,7 +945,10 @@ void Actualiza_Relojes()
 
 /*-----------------------------------------------*/
 void Envia_Resultados_Al_Monitor()
-{ Serial.println("Envia resultados al monitor") ;              
+{ 
+  Serial.println("Envia resultados al monitor") ;  
+  Serial.println("flujo_de_envio = "+String(flujo_de_envio));  
+
   switch (flujo_de_envio)
     {
       case STANDBYE:
@@ -965,6 +1000,8 @@ void Envia_Resultados_Al_Monitor()
 /* --------------------------------------------------------*/
 void Ponderacion_Y_Obtencion_De_Frecuencia2()
 {
+  //Serial.print(">Ponderacion Frecuencia : ");
+
   tiempo_actual_muestreo=millis();
   // define el rango de tiempo de cada rango de muestreo
   if ((tiempo_actual_muestreo-tiempo_inicial_muestreo)>periodo_muestreo_mseg) //espacio para obtener la muestra
@@ -979,8 +1016,7 @@ void Ponderacion_Y_Obtencion_De_Frecuencia2()
     por 10 adicional, por eso se escribe pulsos*mil
     */
     
-
-    muestra[rango_actual]=pulsos*1000; 
+    muestra[rango_actual]=pulsos*100; 
     //Serial.print(" Pulsos rango ["+String(rango_actual)+"] : ");
     //Serial.println(pulsos*10); 
     if (rango_actual<9)
@@ -992,9 +1028,11 @@ void Ponderacion_Y_Obtencion_De_Frecuencia2()
     else // igual a 9 
       { 
         //calcula el promedio del muestreo
-        for (int i=0;i<=9;i++)  { acumulado=acumulado+muestra[i];}
-        promedio_muestreo=(int)acumulado/10;
-        //Serial.println("Nueva frecuencia : "+String(promedio_muestreo));
+        for (int i=0;i<=9;i++)  
+        { 
+          acumulado=acumulado+muestra[i];
+        }
+        promedio_muestreo=int(acumulado/10);
         // reasigna la frecuencia
         nueva_frecuencia=promedio_muestreo;
         // reinicia el acumulado y rangos
@@ -1002,6 +1040,9 @@ void Ponderacion_Y_Obtencion_De_Frecuencia2()
         rango_actual=0;
         // habilita revision del estado de la frecuencia
         cambio_la_frecuencia=SI;
+        //Serial.print("frecuencia : "+String(promedio_muestreo));
+        //Serial.println(promedio_muestreo);
+
       }
   }
 }
@@ -1011,44 +1052,53 @@ void Ponderacion_Y_Obtencion_De_Frecuencia2()
 /* ----------------------------------------------------- */
 uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
 {     
-  uint8_t resultado=0;   
+  uint8_t resultado=SIN_DETECCION; 
   if (cambio_la_frecuencia==SI)
     { 
-      //evalua sin deteccion
-      if ((nueva_frecuencia<(frecuencia_apunta_tiro_verde-500)))
-        {
-          resultado= SIN_DETECCION;
-        }
-      //evalua apunta verde
-      if (nueva_frecuencia>(frecuencia_apunta_tiro_verde-500) && (nueva_frecuencia<(frecuencia_apunta_tiro_verde+500)))
-        {
+      //Serial.print(nueva_frecuencia);
+      //evalua apunta verde valor 100
+      if ( (nueva_frecuencia>(frecuencia_apunta_tiro_verde-19)) && (nueva_frecuencia<(frecuencia_apunta_tiro_verde+20)))
+         {
           resultado= APUNTA_VERDE;
           color_de_disparo=GREEN;
-        }
-      //evalua disparo_verd
-      if (nueva_frecuencia>(frecuencia_disparo_tiro_verde-500) && (nueva_frecuencia<(frecuencia_disparo_tiro_verde+500)))
-        {
-          resultado= DISPARO_VERDE;
-          color_de_disparo=GREEN;
+          Serial.println();
+          Serial.println("Apunta-Verde");
+         }
+      else
+         {
+          //evalua disparo_verde 150
+          if ( (nueva_frecuencia>(frecuencia_disparo_tiro_verde-20)) && (nueva_frecuencia<(frecuencia_disparo_tiro_verde+20)) )
+             {
+             resultado= DISPARO_VERDE;
+             color_de_disparo=GREEN;
+             Serial.println();
+             Serial.println("Disparo-Verde");
+             }
+          else
+             {
+              //evalua apunta AZUL 200
+              if ( (nueva_frecuencia>(frecuencia_apunta_tiro_azul-20)) && (nueva_frecuencia<(frecuencia_apunta_tiro_azul+20)))
+                {
+                  resultado= APUNTA_AZUL;
+                  color_de_disparo=BLUE;
+                  Serial.println("Apunta-Azul");
+                }
+              else
+                {
+                  //evalua disparo AZUL
+                  if (nueva_frecuencia>(frecuencia_disparo_tiro_azul-20) && (nueva_frecuencia<(frecuencia_disparo_tiro_azul+20)))
+                      {
+                        resultado= DISPARO_AZUL;
+                        color_de_disparo=BLUE;
+                        Serial.println("Disparo-Azul");
 
-        }
-      //evalua apunta AZUL
-      if (nueva_frecuencia>(frecuencia_apunta_tiro_azul-500) && (nueva_frecuencia<(frecuencia_apunta_tiro_azul+500)))
-        {
-          resultado= APUNTA_AZUL;
-          color_de_disparo=BLUE;
-
-        }
-      //evalua disparo AZUL
-      if (nueva_frecuencia>(frecuencia_disparo_tiro_azul-500) && (nueva_frecuencia<(frecuencia_disparo_tiro_azul+500)))
-        {
-          resultado= DISPARO_AZUL;
-          color_de_disparo=BLUE;
-
-        }
-      cambio_la_frecuencia=NO; //para generar un perido para la re-evaluacion de la frecuencia
+                      }
+                }
+             }
+         }
+        cambio_la_frecuencia=NO; //para generar un perido para la re-evaluacion de la frecuencia
     }
-      return resultado;
+  return resultado;
 }
 
 
@@ -1196,6 +1246,7 @@ void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_color)
 
 uint8_t Evalua_y_Dibuja_Figura()
 {
+  //Serial.println("tipo de datos.recibidos.tf "+String(datos_recibidos.tf));
   uint8_t resultado=FIGURA_SIN_DEFINIR;
   switch (datos_recibidos.tf) // tipo de figura
   {
@@ -1268,8 +1319,8 @@ uint8_t Evalua_Figura_Normal()
                 valor_puntuacion_figura=PUNTOS_NORMAL_SIN_IMPACTO; 
                 Matriz_TimeOut();
                 tira.show();    
-                delay(tiempo_espera_salida);
-                salir_por_timeout=SI;           
+                // 19agosto delay(tiempo_espera_salida);
+                //salir_por_timeout=SI;           
               } //end if vf*4
           }//end if vf*3
         } //end if vf*2
@@ -1318,8 +1369,8 @@ uint8_t Evalua_Figura_Bono()
       valor_puntuacion_figura=PUNTOS_BONO_SIN_IMPACTO; 
       Matriz_TimeOut();
       tira.show();
-      delay(tiempo_espera_salida);  
-      salir_por_timeout=SI;
+      //delay(tiempo_espera_salida);  
+      //salir_por_timeout=SI;
     }
   tira.show();
   return resultado;
@@ -1359,14 +1410,26 @@ uint8_t Evalua_Figura_Castigo()
       valor_puntuacion_figura=PUNTOS_CASTIGO_SIN_IMPACTO;
       Matriz_Sin_Castigo(); 
       tira.show();
-      delay(tiempo_espera_salida);
-      salir_por_timeout=SI; 
+      //delay(tiempo_espera_salida);
+      //salir_por_timeout=SI; 
     }
   tira.show();
   return resultado;
 }
 
 
+uint8_t Evalua_Figura_Calibra()
+{
+  uint8_t resultado=FIGURA_SIN_DEFINIR;
+      resultado=CALIBRA_UNO;
+      valor_puntuacion_figura=0;
+      tira.clear();
+      Matriz_Calibra();   
+      tira.show();
+  return resultado;
+}
+
+/*
 uint8_t Evalua_Figura_Calibra()
 {
   uint8_t resultado=FIGURA_SIN_DEFINIR;
@@ -1383,12 +1446,15 @@ uint8_t Evalua_Figura_Calibra()
       valor_puntuacion_figura=0;
       Matriz_TimeOut(); 
       tira.show();
-      delay(tiempo_espera_salida);
-      salir_por_timeout=SI; 
+      //delay(tiempo_espera_salida);
+      //salir_por_timeout=SI; 
     }
   tira.show();
   return resultado;
 }
+
+*/
+
 
 
 
@@ -2007,14 +2073,14 @@ void Aro_Disparo()
           {
             tiempo_termina_tiro=millis();
             Aro_Disparo_Secuencia();
-            posicion_nueva==DISPARO_DETECTADO;
+            posicion_nueva=DISPARO_DETECTADO;
           }
         break;
 
       case PUBLICO:
           tiempo_termina_tiro=millis();
           Aro_Apuntando_Secuencia();  // prende el apuntar sin importar el color que apunte
-          posicion_nueva==DISPARO_DETECTADO;   
+          posicion_nueva=DISPARO_DETECTADO;   
           break;       
     }
 
