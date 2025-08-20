@@ -173,6 +173,8 @@ typedef struct structura_mensaje
 
 } structura_mensaje;
 
+
+
 /* fin de importacion*/
 
 structura_mensaje datos_enviados;
@@ -573,8 +575,10 @@ void Matriz_Aro_5_Disparo();
 void Matriz_Aro_6_Disparo();
 void Matriz_Aro_7_Disparo();
 
-//auxiliar para reconocer la matriz, en produccion debe quitarse la llamada en el setup 
-void Barre_Matriz();
+//Auxiliares
+void Barre_Matriz(); //auxiliar para reconocer la matriz, en produccion debe quitarse la llamada en el setup 
+void Despliega_datos_recibidos(); //auxiliar para estado de datos_recibidos
+
 
 
 
@@ -594,6 +598,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
   Serial.println(macStr);
   
   Serial.println("Tiro activo = "+String(datos_recibidos.t));
+  Despliega_datos_recibidos();
 
   // se guada tipo de tiro recibido para validar el rady de loc jugadores de contadores descendentes
   // SE REGRESA JUGADOR READY PARA EVITAR ACUMULAR TIROS EN JUGADOR
@@ -995,6 +1000,51 @@ void Envia_Resultados_Al_Monitor()
 
 
 /* ----------------------------------------------------------*/
+
+void Despliega_datos_recibidos()
+{
+Serial.println("-------------------------Paquete datos_recibidos:");
+//Id paquete
+Serial.println(".n = ID Paquete : "+String(datos_recibidos.n));
+// valores posibles de .ju
+switch (datos_recibidos.ju)
+  {
+    case JUEGO_CLASICO:
+      Serial.println(".ju = 1= JUEGO CLASICO");
+      break;
+    case JUEGO_TORNEO:
+      Serial.println(".ju = 2= JUEGO TORNEO");
+      break;    
+    case JUEGO_EQUIPOS:
+      Serial.println(".ju = 3= JUEGO EQUIPOS");
+      break;
+    case JUEGO_VELOCIDAD:
+      Serial.println(".ju = 4= JUEGO VELOCIDAD");
+      break;
+    default:
+      Serial.println(".ju = SIN DEFINIR -> "+String(datos_recibidos.ju));
+      break;
+  }
+  Serial.println(".jr = No. de Round = "+String(datos_recibidos.jr));
+switch (datos_recibidos.t)
+  {
+    case TEST:
+      Serial.println(".t = 0= SOLICITUD DE TEST DE FUNCIONAMIENTO");
+      break;
+    case TIRO_ACTIVO:
+      Serial.println(".t = 1= SOLICITUD DE TIRO ACTIVO");
+      break;    
+    case JUGADOR_READY:
+      Serial.println(".t = 2= SOLICITUD DE JUGADOR READY");
+      break;
+    default:
+      Serial.println(".t = SIN DEFINIR -> "+String(datos_recibidos.t));
+      break;
+  }
+  Serial.println("-------------------------");
+
+}
+
 
 
 /* --------------------------------------------------------*/
