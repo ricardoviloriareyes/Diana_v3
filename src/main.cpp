@@ -1525,7 +1525,8 @@ uint8_t Evalua_Figura_Bono()
   return resultado;
 }
 
-uint8_t Evalua_Figura_Castigo()
+uint8_t 
+Evalua_Figura_Castigo()
 {
   uint8_t resultado=FIGURA_SIN_DEFINIR;
   int rango = millis()-tiempo_inicia_tiro; 
