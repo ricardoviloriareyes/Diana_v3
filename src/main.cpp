@@ -180,7 +180,7 @@ typedef struct structura_mensaje
 structura_mensaje datos_enviados;
 structura_mensaje 
 datos_recibidos;
-structura_mensaje datos_locales_diana;  // para usar en diana
+//structura_mensaje datos_locales_diana;  // para usar en diana
 
 #define TEST 0
 #define TIRO_ACTIVO 1
@@ -261,7 +261,7 @@ uint8_t tipo_de_figura=TIPO_NORMAL;
 #define PUNTOS_CASTIGO_SIN_IMPACTO 0
 
 //Calibra
-#define CALIBRA_UNO  1
+#define CALIBRA_OK  20
 
 //Movimiento de figuras
 #define IZQUIERDA 0 //Sentido del movimiento
@@ -556,6 +556,9 @@ void Matriz_Corazon_400();
 void Matriz_Corazon_300();
 void Matriz_Corazon_200();
 
+//figuras calibra
+void Matriz_Ok();
+
 
 
 void  Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color);
@@ -622,6 +625,8 @@ void Matriz_Aro_7_Disparo();
 //Auxiliares
 void Barre_Matriz(); //auxiliar para reconocer la matriz, en produccion debe quitarse la llamada en el setup 
 void Despliega_datos_recibidos(); //auxiliar para estado de datos_recibidos
+void Despliega_datos_enviados();
+
 
 
 
@@ -1034,15 +1039,122 @@ void Envia_Resultados_Al_Monitor()
 
 
 
+/*------------------------------------------------------------*/
 
+
+void Despliega_datos_enviados()
+{
+
+   // datos obtenidos del disparo
+  Serial.println(---------"DATOS ENVIADOS A MONITOR-------------------");
+  Serial.println("No. jugador que impacto : "+String(datos_enviados.jg));
+  Serial.println("Puntuacion del disparo  : "+String(datos_enviados.po));
+  Serial.println("figura que impacto      : "+String(datos_enviados.fi));
+
+
+  //Propiedades del Paquete
+  switch (datos_enviados.t)
+    {
+      case TEST:
+        Serial.println(".t = 0= TEST DE FUNCIONAMIENTO");
+        break;
+      case TIRO_ACTIVO:
+        Serial.println(".t = 1= SOLICITUD DE TIRO ACTIVO");
+        break;    
+      case JUGADOR_READY:
+        Serial.println(".t = 2= SOLICITUD DE JUGADOR READY");
+        break;
+      default:
+        Serial.println(".t = SIN DEFINIR -> "+String(datos_enviados.t));
+        break;
+    }
+  Serial.println(".d = No. diana : "+String(datos_enviados.d));
+  switch (datos_enviados.c)
+    {
+      case GREEN:
+        Serial.println(".c = 2 = COLOR GREEN");
+        break;
+      case BLUE:
+        Serial.println(".c = 3 = COLOR  BLUE");
+        break;
+      case RED:
+        Serial.println(".c = 1 = COLOR RED");
+        break;
+      default :
+        Serial.println(".c = COLOR SIN DEFINIR -> "+String(datos_recibidos.c));
+        break;
+    }
+  Serial.println(".p = No. Jugador : "+String(datos_enviados.p));
+  Serial.println(".s = No. de tiro : "+String(datos_enviados.s));
+    //Condiciones de manejo de tiro
+  switch (datos_enviados.pp)
+    {
+      case PRIVADO:
+        Serial.println(".pp = 0 = PRIVADO ");
+        break;
+      case PUBLICO:
+        Serial.println(".pp = 1 = PUBLICO ");
+        break;
+      default:
+        Serial.println(".pp = SIN DEFINIR  --> "+String(datos_enviados.pp));
+        break;
+    }
+  Serial.println(".pa = No. de Jugador alterno : "+String(datos_enviados.pa));
+  Serial.println(".vf = VELOCIDAD DE CAMBIO RECIBIDA : "+String(datos_enviados.vf));
+  switch (datos_enviados.tf)
+    {
+      case FIGURA_SIN_DEFINIR:
+        Serial.println("tf =0 = TIPO_TEST ");
+        break;
+      case TIPO_NORMAL:
+        Serial.println("tf =1 = TIPO_NORMAL ");
+      case TIPO_BONO:
+        Serial.println("tf =2 = TIPO_BONO ");
+        break;
+      case TIPO_CASTIGO:
+        Serial.println("tf =3 = TIPO_CASTIGO ");
+        break;
+      case TIPO_CALIBRA:
+        Serial.println("tf =4 = TIPO_CALIBRA ");
+        break;      
+      default:
+        Serial.println(".tf = no encontrado el valor   --> "+String(datos_enviados.tf));
+        break;        
+    }
+  Serial.println(".vt = INCREMENTO DE NO. TIROS EN CUENTA  : "+String(datos_enviados.vt));
+  Serial.println(".xf = NO DE FIGURA CON QUE INICIAR : "+String(datos_enviados.vt));
+ 
+  // valores posibles de .ju
+  switch (datos_enviados.ju)
+    {
+      case JUEGO_CLASICO:
+        Serial.println(".ju = 1= JUEGO CLASICO");
+        break;
+      case JUEGO_TORNEO:
+        Serial.println(".ju = 2= JUEGO TORNEO");
+        break;    
+      case JUEGO_EQUIPOS:
+        Serial.println(".ju = 3= JUEGO EQUIPOS");
+        break;
+      case JUEGO_VELOCIDAD:
+        Serial.println(".ju = 4= JUEGO VELOCIDAD");
+        break;
+      default:
+        Serial.println(".ju = SIN DEFINIR -> "+String(datos_enviados.ju));
+        break;
+    }
+
+  Serial.println(".jr = No. de Round = "+String(datos_enviados.jr));
+
+  Serial.println("---------FIN DE DATOS ENVIADOS A MONITOR ----------------");
+
+}
 
 /* ----------------------------------------------------------*/
 
 void Despliega_datos_recibidos()
 {
-
-
-
+  Serial.println(---------"DATOS RECIBIDOS-------------------");
   //Propiedades del Paquete
   switch (datos_recibidos.t)
     {
@@ -1112,41 +1224,32 @@ void Despliega_datos_recibidos()
         Serial.println(".tf = no encontrado el valor   --> "+String(datos_recibidos.tf));
         break;        
     }
-  Serial.println(".vt = VALOR DEL TIRO EN CUENTA  : "+String(datos_recibidos.vt));
+  Serial.println(".vt = INCREMENTO DE NO. TIROS EN CUENTA  : "+String(datos_recibidos.vt));
   Serial.println(".xf = NO DE FIGURA CON QUE INICIAR : "+String(datos_recibidos.vt));
  
- 
-
-
-
-
-// valores posibles de .ju
-switch (datos_recibidos.ju)
-  {
-    case JUEGO_CLASICO:
-      Serial.println(".ju = 1= JUEGO CLASICO");
-      break;
-    case JUEGO_TORNEO:
-      Serial.println(".ju = 2= JUEGO TORNEO");
-      break;    
-    case JUEGO_EQUIPOS:
-      Serial.println(".ju = 3= JUEGO EQUIPOS");
-      break;
-    case JUEGO_VELOCIDAD:
-      Serial.println(".ju = 4= JUEGO VELOCIDAD");
-      break;
-    default:
-      Serial.println(".ju = SIN DEFINIR -> "+String(datos_recibidos.ju));
-      break;
-  }
-
-
-
-
+  // valores posibles de .ju
+  switch (datos_recibidos.ju)
+    {
+      case JUEGO_CLASICO:
+        Serial.println(".ju = 1= JUEGO CLASICO");
+        break;
+      case JUEGO_TORNEO:
+        Serial.println(".ju = 2= JUEGO TORNEO");
+        break;    
+      case JUEGO_EQUIPOS:
+        Serial.println(".ju = 3= JUEGO EQUIPOS");
+        break;
+      case JUEGO_VELOCIDAD:
+        Serial.println(".ju = 4= JUEGO VELOCIDAD");
+        break;
+      default:
+        Serial.println(".ju = SIN DEFINIR -> "+String(datos_recibidos.ju));
+        break;
+    }
 
   Serial.println(".jr = No. de Round = "+String(datos_recibidos.jr));
 
-  Serial.println("-------------------------");
+  Serial.println("---------FIN DE DATOS RECIBIDOS ----------------");
 
 }
 
@@ -1346,7 +1449,7 @@ int creloj_100mseg() //CD001
 
 void  Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color)
 {
-  switch (datos_locales_diana.c)
+  switch (datos_recibidos.c)
   {
     case RED:
       /*code*/
@@ -1443,7 +1546,7 @@ uint8_t Evalua_Figura_Normal()
 
   //clasifica la figura dependiendo del tiempo df (velocidad de cambio figura)
 
-  if (rango<datos_recibidos.vf*2)
+  if (rango<datos_recibidos.vf*1)
     {
       resultado_figura=NORMAL_OSO;
       valor_puntuacion_figura=PUNTOS_NORMAL_OSO;
@@ -1451,7 +1554,7 @@ uint8_t Evalua_Figura_Normal()
     }
   else
     {
-      if (rango<(datos_recibidos.vf*3))
+      if (rango<(datos_recibidos.vf*2))
         {
           resultado_figura=NORMAL_ZORRA;
           valor_puntuacion_figura=PUNTOS_NORMAL_ZORRA;
@@ -1460,7 +1563,7 @@ uint8_t Evalua_Figura_Normal()
         }
       else
         {
-          if (rango<(datos_recibidos.vf*4))
+          if (rango<(datos_recibidos.vf*3))
             {
               resultado_figura=NORMAL_MARIPOSA;
               valor_puntuacion_figura=PUNTOS_NORMAL_MARIPOSA;
@@ -1468,7 +1571,7 @@ uint8_t Evalua_Figura_Normal()
             }
           else
           {
-            if (rango<(datos_recibidos.vf*5))
+            if (rango<(datos_recibidos.vf*4))
               {
                 resultado_figura=NORMAL_PINGUINO;
                 valor_puntuacion_figura=PUNTOS_NORMAL_PIGUINO;
@@ -1476,7 +1579,7 @@ uint8_t Evalua_Figura_Normal()
               }
             else
               {
-                if (rango<(datos_recibidos.vf*6))
+                if (rango<(datos_recibidos.vf*5))
                   {
                     resultado_figura=NORMAL_ARANA;
                     valor_puntuacion_figura=PUNTOS_NORMAL_ARANA;
@@ -1484,7 +1587,7 @@ uint8_t Evalua_Figura_Normal()
                   }
                 else
                   {
-                    if (rango<(datos_recibidos.vf*7))
+                    if (rango<(datos_recibidos.vf*6))
                         {
                           resultado_figura=NORMAL_LAGARTIJA;
                           valor_puntuacion_figura=PUNTOS_NORMAL_LAGARTIJA;
@@ -1513,7 +1616,7 @@ uint8_t Evalua_Figura_Bono()
   //Mostrara la figura por dos periodos, en caso de no impacto manda el valor a cero
   uint8_t resultado=FIGURA_SIN_DEFINIR;
   int rango = millis()-tiempo_inicia_tiro; 
-  if (rango<(datos_recibidos.vf*3))
+  if (rango<(datos_recibidos.vf*2))
     {
       Serial.println("Bono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
 
@@ -1556,7 +1659,7 @@ Evalua_Figura_Castigo()
 {
   uint8_t resultado=FIGURA_SIN_DEFINIR;
   int rango = millis()-tiempo_inicia_tiro; 
-  if (rango<(datos_recibidos.vf*3))
+  if (rango<(datos_recibidos.vf*2))
     {
       Serial.println("Castigo- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
       switch (datos_recibidos.xf)
@@ -1582,7 +1685,7 @@ Evalua_Figura_Castigo()
     }
   else
     {
-        if (rango<(datos_recibidos.vf*5)) // si no dispara al castigo, se da el premio segun el castigo
+        if (rango<(datos_recibidos.vf*4)) // si no dispara al castigo, se da el premio segun el castigo
           {
             Serial.println("CastigoBono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
             switch (datos_recibidos.xf)
@@ -1622,7 +1725,7 @@ Evalua_Figura_Castigo()
 uint8_t Evalua_Figura_Calibra()
 {
   uint8_t resultado=FIGURA_SIN_DEFINIR;
-      resultado=CALIBRA_UNO;
+      resultado=CALIBRA_OK;
       valor_puntuacion_figura=PUNTOS_CALIBRA_0;
       tira.clear();
       Asigna_Color_Basandose_En_Color_Recibido_De_Monitor();
@@ -2436,6 +2539,7 @@ void  Arma_Paquete_De_Envio()
         }
   datos_enviados.po=valor_puntuacion_figura;   //[Diana]puntuacion de la figura impactada
   datos_enviados.fi=figura_actual;   //[Diana]figura impactada en tiro 
+  Despliega_datos_enviados();
   
 }
 
@@ -2581,6 +2685,9 @@ switch (figura_actual)
     break;
   case BONO_CORAZON_200:
     Matriz_200();
+    break;
+  case CALIBRA_OK:
+    Matriz_Ok();
     break;
   default:
      Serial.println("Matriz_Valor_De_Tiro--> Figura Actual-NO RECONOCIDA => "+String(figura_actual));
@@ -3377,5 +3484,19 @@ tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 182],0,2
 tira.setPixelColor(Pantalla[ 203],0,255,0);tira.setPixelColor(Pantalla[ 201],0,255,0);tira.setPixelColor(Pantalla[ 198],0,255,0);tira.setPixelColor(Pantalla[ 196],0,255,0);tira.setPixelColor(Pantalla[ 193],0,255,0);
 tira.setPixelColor(Pantalla[ 212],0,255,0);tira.setPixelColor(Pantalla[ 214],0,255,0);tira.setPixelColor(Pantalla[ 217],0,255,0);tira.setPixelColor(Pantalla[ 219],0,255,0);tira.setPixelColor(Pantalla[ 222],0,255,0);
 tira.setPixelColor(Pantalla[ 238],0,255,0);tira.setPixelColor(Pantalla[ 237],0,255,0);tira.setPixelColor(Pantalla[ 236],0,255,0);tira.setPixelColor(Pantalla[ 235],0,255,0);tira.setPixelColor(Pantalla[ 233],0,255,0);tira.setPixelColor(Pantalla[ 232],0,255,0);tira.setPixelColor(Pantalla[ 231],0,255,0);tira.setPixelColor(Pantalla[ 230],0,255,0);tira.setPixelColor(Pantalla[ 228],0,255,0);tira.setPixelColor(Pantalla[ 227],0,255,0);tira.setPixelColor(Pantalla[ 226],0,255,0);tira.setPixelColor(Pantalla[ 225],0,255,0);
+
+}
+
+void Matriz_Ok()
+{
+tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 56],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 71],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 68],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 88],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 91],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 103],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 100],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 115],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 116],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 117],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 120],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 138],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 135],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 132],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 149],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 152],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 155],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 170],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 167],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 164],(10+rand()%245),(10+rand()%245),(10+rand()%245));
+tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 184],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));
 
 }
