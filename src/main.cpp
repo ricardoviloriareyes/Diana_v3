@@ -666,7 +666,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
       Asigna_Frecuencias_Base_Para_Tiro(datos_recibidos.c);
 
       case_estado_diana=ENCENDIDO;
-      Serial.println("case_estado_diana= ENCENDIDO");
+      //Serial.println("case_estado_diana= ENCENDIDO");
     }
   else
   {
@@ -705,7 +705,7 @@ void Asigna_Pantalla()
 
 void Barre_Matriz()
 {
-  for (int i=0; i<=255;++i)
+  for (int i=0; i<=15;++i)
     {
       tira.setPixelColor(i,tira.Color(0,255,0));
       tira.show();
@@ -802,7 +802,7 @@ void loop()
         {
             case INICIA_STANDBYE:
                   //Reinicia matriz para analisis de frecuencia          
-                  Serial.println("reinicia frecuencias");
+                  //Serial.println("reinicia frecuencias");
                   for (int i=0; i<=9;++i)
                   {
                     muestra[i]=0;
@@ -814,7 +814,7 @@ void loop()
                   // incia tiempo inicial del tiro
                   tiempo_inicia_tiro=millis(); 
                   tira.clear();
-                  Serial.println("Inicializa tiempo (mseg): "+String(tiempo_inicia_tiro));
+                  //Serial.println("Inicializa tiempo (mseg): "+String(tiempo_inicia_tiro));
                   case_proceso_encendido=MONITOREA_DISPARO;
                   break;
 
@@ -833,7 +833,7 @@ void loop()
                           // figura de fondo la imprime c/200seg par dar movimientos cn base al tiempo recibido 
                           //Dibuja figura y establece su valor en ese momento
                           Switchea_Izquierda_Por_Derecha(); //activa movimiento patas cada 200 milisegundos
-                          Serial.print("-");
+                          //Serial.print("-");
                           tira.clear();
                           figura_actual=Evalua_y_Dibuja_Figura(); //evalua y Dibuja figura cada 100 milisegundos
                           tira.show(); 
@@ -919,11 +919,11 @@ void loop()
               Serial.println("Envio Paquete OK, intento : "+String(intentos_envio));
               enviar_datos=NO;
               tira.clear();
-              tira.show();
-              for (int i=0; i<=15;++i)
-                {tira.setPixelColor(i,tira.Color(250,0,0));
-                }
-              tira.show();
+              // confirmar envio por medio de display de diana
+              //for (int i=0; i<=15;++i)
+                //{tira.setPixelColor(i,tira.Color(250,0,0));
+              //  }
+              //tira.show();
             }
         else 
             {
@@ -1046,7 +1046,8 @@ void Despliega_datos_enviados()
 {
 
    // datos obtenidos del disparo
-  Serial.println(---------"DATOS ENVIADOS A MONITOR-------------------");
+  Serial.println();
+  Serial.println("---------DATOS ENVIADOS A MONITOR-------------------");
   Serial.println("No. jugador que impacto : "+String(datos_enviados.jg));
   Serial.println("Puntuacion del disparo  : "+String(datos_enviados.po));
   Serial.println("figura que impacto      : "+String(datos_enviados.fi));
@@ -1146,7 +1147,8 @@ void Despliega_datos_enviados()
 
   Serial.println(".jr = No. de Round = "+String(datos_enviados.jr));
 
-  Serial.println("---------FIN DE DATOS ENVIADOS A MONITOR ----------------");
+  Serial.println("---------FIN DE DATOS ENVIADOS  ----------------");
+  Serial.println();
 
 }
 
@@ -1154,7 +1156,7 @@ void Despliega_datos_enviados()
 
 void Despliega_datos_recibidos()
 {
-  Serial.println(---------"DATOS RECIBIDOS-------------------");
+  Serial.println("---------DATOS RECIBIDOS-------------------");
   //Propiedades del Paquete
   switch (datos_recibidos.t)
     {
@@ -1320,7 +1322,7 @@ uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
           resultado= APUNTA_VERDE;
           color_de_disparo=GREEN;
           Serial.println();
-          Serial.println("Apunta-Verde");
+          Serial.print("Apunta-Verde");
           detecto_laser=ENCENDIDO;
 
          }
@@ -1332,7 +1334,7 @@ uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
               resultado= DISPARO_VERDE;
               color_de_disparo=GREEN;
               Serial.println();
-              Serial.println("Disparo-Verde");
+              Serial.print("Disparo-Verde");
               detecto_laser=ENCENDIDO;
              }
           else
@@ -1342,7 +1344,7 @@ uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
                 {
                   resultado= APUNTA_AZUL;
                   color_de_disparo=BLUE;
-                  Serial.println("Apunta-Azul");
+                  Serial.print("Apunta-Azul");
                   detecto_laser=ENCENDIDO;
 
                 }
@@ -1353,7 +1355,7 @@ uint8_t  Calcula_Color_Y_Nivel_Del_Disparo()
                       {
                         resultado= DISPARO_AZUL;
                         color_de_disparo=BLUE;
-                        Serial.println("Disparo-Azul");
+                        Serial.print("Disparo-Azul");
                         detecto_laser=ENCENDIDO;
                       }
                 }
@@ -1618,8 +1620,7 @@ uint8_t Evalua_Figura_Bono()
   int rango = millis()-tiempo_inicia_tiro; 
   if (rango<(datos_recibidos.vf*2))
     {
-      Serial.println("Bono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
-
+      //Serial.println("Bono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
       switch (datos_recibidos.xf)
       {
         case BONO_CORAZON_500:
@@ -1661,7 +1662,7 @@ Evalua_Figura_Castigo()
   int rango = millis()-tiempo_inicia_tiro; 
   if (rango<(datos_recibidos.vf*2))
     {
-      Serial.println("Castigo- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
+      //Serial.println("Castigo- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
       switch (datos_recibidos.xf)
       {
         case CASTIGO_UNICORNIO:
@@ -1687,7 +1688,7 @@ Evalua_Figura_Castigo()
     {
         if (rango<(datos_recibidos.vf*4)) // si no dispara al castigo, se da el premio segun el castigo
           {
-            Serial.println("CastigoBono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
+            //Serial.println("CastigoBono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
             switch (datos_recibidos.xf)
                {
                     case CASTIGO_UNICORNIO: // se premia con mayor punturacion  por no disparar a unicornio
@@ -2637,7 +2638,7 @@ void Valor_De_Tiro()
 
 void Matriz_Valor_De_Tiro()
 {
-Serial.println("Matriz_Valor_De_Tiro--> Figura Actual => "+String(figura_actual));
+//Serial.println("Matriz_Valor_De_Tiro--> Figura Actual => "+String(figura_actual));
 switch (figura_actual)
 {
   // castigos
