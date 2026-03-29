@@ -63,7 +63,7 @@ volatile unsigned long previous_time_reenvio, current_time_reenvio;
 #define ENVIA_PAQUETE 2
 #define PAUSA_REENVIO 3
 int intentos_envio = 0;
-int8_t flujo_de_envio = STANDBYE;
+int8_t case_proceso_envio = STANDBYE;
 
 // logica del proceso del disparo
 #define INICIA_STANDBYE 0
@@ -71,7 +71,7 @@ int8_t flujo_de_envio = STANDBYE;
 #define MONITOREA_DISPARO 2
 #define ENVIA_RESULTADOS 3
 #define FINALIZA_REINICIA_VARIBLES 4
-int8_t case_proceso_encendido = INICIA_STANDBYE;
+int8_t case_posicion_del_proceso = INICIA_STANDBYE;
 
 // variables de tipo de figura CD001
 #define BICHOS 1
@@ -395,12 +395,12 @@ ulong frecuencia_disparo_tiro_publico = 0;
 ulong frecuencia_apunta_tiro_publico = 0;
 
 // los datos de las frecuencias se multiplican por 10 para obtener la frecuencia central
-ulong frecuencia_apunta_tiro_verde = 200;  // 1 KH
-ulong frecuencia_disparo_tiro_verde = 300; // 3 KH
-ulong frecuencia_apunta_neutro = 400;      // 4 KH
-ulong frecuencia_apunta_tiro_azul = 500;   // 5 KH
-ulong frecuencia_disparo_tiro_azul = 600;  // 6 KH
-ulong ajuste_frecuencia = 1;               // 100hz
+int frecuencia_apunta_neutro = 500;      
+int frecuencia_apunta_tiro_verde = 1500;  
+int frecuencia_disparo_tiro_verde = 2500; 
+int frecuencia_apunta_tiro_azul = 3500;   
+int frecuencia_disparo_tiro_azul = 4500;  
+int ajuste_frecuencia = 1;               
 
 #define SIN_DETECCION 0
 #define DISPARO_VERDE 1
@@ -413,7 +413,8 @@ uint8_t case_valor_del_laser = SIN_DETECCION;
 uint8_t figura_actual = FIGURA_SIN_DEFINIR;
 
 /* ----------------- ENVIO DE DATOS -----------------------------*/
-int enviar_datos = NO;
+int habilita_enviar_paquete = NO;
+int paquete_enviado_ok=NO;
 String success;
 
 // Callback when data is sent
@@ -426,8 +427,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
   {
     success = "Delivery Success :)";
     // reinicia el equipo para esperar un nueva solicitud
-    // flujo_de_envio=STANDBYE;
-    // case_proceso_encendido = INICIA_STANDBYE;
+    // case_proceso_envio=STANDBYE;
+    // case_posicion_del_proceso = INICIA_STANDBYE;
     // case_estado_diana=APAGADO;
     // captura_tiempo_inicial=SI;
   }
@@ -500,6 +501,8 @@ int reloj_200mseg();
 int creloj_100mseg();
 
 int8_t detecto_laser = NO;
+int8_t monitorea_frecuencia=SI;
+
 
 // figuras
 void Matriz_Oso();
@@ -531,6 +534,7 @@ void Matriz_Corazon_200();
 // figuras calibra
 void Matriz_Ok();
 
+void Analiza_Posicion_En_Encendido();
 void Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color);
 void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_color);
 void Actualiza_Relojes();
@@ -554,6 +558,7 @@ void Matriz_Aro_4();
 void Matriz_Aro_5();
 void Matriz_Aro_6();
 void Matriz_Aro_7();
+void No_Wifi();
 
 // figuras de valores del tiro
 void Aro_Disparo_Secuencia();
@@ -626,6 +631,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
     Asigna_Frecuencias_Base_Para_Tiro(datos_recibidos.c);
 
     case_estado_diana = ENCENDIDO;
+    monitorea_frecuencia=SI;
     // Serial.println("case_estado_diana= ENCENDIDO");
   }
   else
@@ -706,51 +712,49 @@ void setup()
 
 /* ----------------------  F I N    S E T U P -------------------------*/
 
-
-
 /* ------------------------inicio loop ----------------------------*/
 void loop()
 {
 
   // Ponderacion_Y_Obtencion_De_Frecuencia2();
-  calcula_frecuencia();
+  if (monitorea_frecuencia == SI) // se habilita cuando se reciben datos, se deshabilita cuando se detecta disparo para evitar conflicto mientras se manda resultado
+  {
+    calcula_frecuencia();
+  }
   switch (case_estado_diana)
   {
   case APAGADO:
     // Serial.print(".");
     break;
 
-  case ENCENDIDO: 
+  case ENCENDIDO:
     Analiza_Posicion_En_Encendido();
     break;
   }
-  
 
-  // PROCESO FINAL, 
+  // PROCESO FINAL,
   // ENVIA LOS DATOS AMONITOR Y APAGA DIANA, tiene que estar en el principal por requerimiento del esp_now_send
-  if (enviar_datos == SI)
+  if (habilita_enviar_paquete == SI)
   {
     Serial.println("ENVIO PAQUETE :" + String(datos_enviados.n));
     esp_err_t result = esp_now_send(broadcastAddressMonitor, (uint8_t *)&datos_enviados, sizeof(structura_mensaje));
     delay(250);
     if (result == ESP_OK)
     {
-      case_proceso_encendido = FINALIZA_REINICIA_VARIBLES; // termina el proceso de encendido y resetea todas las variables
+      case_posicion_del_proceso = FINALIZA_REINICIA_VARIBLES; // termina el proceso de encendido y resetea todas las variables
       Reinicia_Todas_Las_Variables_Al_Termnar();
       Serial.println("Envio Paquete OK, intento : " + String(intentos_envio));
-      enviar_datos = NO;
+      habilita_enviar_paquete = NO;
+      paquete_enviado_ok=SI;
+      case_proceso_envio=STANDBYE;
       tira.clear();
-      // confirmar envio por medio de display de diana
-      // for (int i=0; i<=15;++i)
-      //{tira.setPixelColor(i,tira.Color(250,0,0));
-      //  }
-      // tira.show();
     }
     else
     {
       Serial.println("Error envio : " + String(intentos_envio));
       intentos_envio++;
-      flujo_de_envio = PAUSA_REENVIO;
+      paquete_enviado_ok=NO;
+      case_proceso_envio = PAUSA_REENVIO;
       tira.clear();
       tira.show();
       tira.setPixelColor(1, tira.Color(0, 250, 0));
@@ -759,124 +763,122 @@ void loop()
       tira.show();
       previous_time_reenvio = millis();
     }
-  } // fin if enviar_datos
+  } // fin if habilita_enviar_paquete
 }
 // FIN  loop ---------------------------------------------------
 
-void Analiza_Posicion_En_Encendido(){
+void Analiza_Posicion_En_Encendido()
+{
 
-    switch (case_proceso_encendido)
+  switch (case_posicion_del_proceso)
+  {
+  case INICIA_STANDBYE:
+    case_posicion_del_proceso = INICIALIZA_TIEMPO;
+    break;
+
+  case INICIALIZA_TIEMPO:
+    // incia tiempo inicial del tiro
+    tiempo_inicia_tiro = millis();
+    tira.clear();
+    case_posicion_del_proceso = MONITOREA_DISPARO;
+    break;
+
+  case MONITOREA_DISPARO:
+    if (cambio_la_frecuencia==SI)
     {
-    case INICIA_STANDBYE:
-      // Reinicia matriz
-      // for (int i = 0; i <= 9; ++i)
-      // {
-      //   muestra[i] = 0;
-      // }
-      case_proceso_encendido = INICIALIZA_TIEMPO;
-      break;
-
-    case INICIALIZA_TIEMPO:
-      // incia tiempo inicial del tiro
-      tiempo_inicia_tiro = millis();
-      tira.clear();
-      case_proceso_encendido = MONITOREA_DISPARO;
-      break;
-
-    case MONITOREA_DISPARO:
+      // detecto_laser = ENCENDIDO;
       case_valor_del_laser = Calcula__Valor_Del_Laser(); // cuando calcula modifica
-      if (nueva_frecuencia >= 1250)
+    }
+    else
+    {
+      // detecto_laser = APAGADO;
+      case_valor_del_laser = SIN_DETECCION;
+    }
+    // el valor de "valor_y_color_laser"--> SIN_RESULTADO, APUNTA_VERDE, APUNTA_AZUL, DISPARO_VERDE, DISPARO_AZUL
+    if (((reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ) || (cambio_la_frecuencia == SI)))
+    {
+      switch (case_valor_del_laser)
       {
-        detecto_laser = ENCENDIDO;
+      case SIN_DETECCION:
+        /* code */
+        if (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)
+        {
+          // figura de fondo la imprime c/200seg par dar movimientos cn base al tiempo recibido
+          Switchea_Izquierda_Por_Derecha(); // activa movimiento patas cada 200 milisegundos
+          // Serial.print("-");
+          tira.clear();
+          figura_actual = Evalua_y_Dibuja_Figura(); // evalua y Dibuja figura cada 100 milisegundos
+          tira.show();
+        }
+        break;
+
+      case APUNTA_VERDE:
+        /*code*/
+        Serial.print("APUNTA-VERDE");
+        Aro_Apuntando();
+        tira.show();
+        cambio_la_frecuencia=NO;
+        break;
+
+      case DISPARO_VERDE:
+        /*code*/
+        Serial.print("DISPARO-VERDE");
+        Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
+        posicion_nueva = DISPARO_DETECTADO;
+        monitorea_frecuencia=NO;
+        cambio_la_frecuencia = NO;
+        break;
+
+      case APUNTA_AZUL:
+        /*code*/
+        Aro_Apuntando();
+        tira.show();
+        cambio_la_frecuencia=NO;
+        break;
+      case DISPARO_AZUL:
+        /*code*/
+        Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
+        posicion_nueva = DISPARO_DETECTADO;
+        monitorea_frecuencia=NO;
+        cambio_la_frecuencia=NO;
+        break;
+      }
+    }
+
+
+    // Deteccion de disparo o por timeout de espera que fue asignado en las figuras
+    if ((posicion_nueva == DISPARO_DETECTADO) || (salir_por_timeout == SI)) // posicion nueva es modificado en califica frecuencia
+    {
+      // marca el tiempo final del tiro
+      tiempo_termina_tiro = millis();
+      if (posicion_nueva == DISPARO_DETECTADO)
+      {
+        Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
       }
       else
       {
-        detecto_laser = APAGADO;
+        Serial.println("salir_por_timeout==SI");
       }
-      // el valor de "valor_y_color_laser"--> SIN_RESULTADO, APUNTA_VERDE, APUNTA_AZUL, DISPARO_VERDE, DISPARO_AZUL
-      if ( (( reloj_200mseg()==DETECTA_CAMBIO_ESTADO_RELOJ )  || (detecto_laser==ENCENDIDO) ) )
-      {
-        switch (case_valor_del_laser)
-        {
-        case SIN_DETECCION:
-          /* code */
-          if (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)
-          {
-            // figura de fondo la imprime c/200seg par dar movimientos cn base al tiempo recibido
-            Switchea_Izquierda_Por_Derecha(); // activa movimiento patas cada 200 milisegundos
-            // Serial.print("-");
-            tira.clear();
-            figura_actual = Evalua_y_Dibuja_Figura(); // evalua y Dibuja figura cada 100 milisegundos
-            tira.show();
-          }
+      // Sela del MONITOREO  y selecciona ENVIO DE RESULTADOS
+      case_proceso_envio = PREPARA_PAQUETE_ENVIO;
+      // Activa el envio del resultado
+      activa_envio_de_resultados = SI;
+      // reinicia la deteccion del laser
+      posicion_nueva = SIN_DETECCION;
+      case_posicion_del_proceso = ENVIA_RESULTADOS;
 
-          break;
+    }
+    break;
 
-        case APUNTA_VERDE:
-          /*code*/
-          Serial.print("APUNTA-VERDE");
-          Aro_Apuntando();
-          tira.show();
-          detecto_laser = APAGADO;
-          break;
+  case ENVIA_RESULTADOS:
+    Envia_Resultados_Al_Monitor();
+    break;
 
-        case DISPARO_VERDE:
-          /*code*/
-          Serial.print("DISPARO-VERDE");
-          Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
-          posicion_nueva = DISPARO_DETECTADO;
-          detecto_laser = APAGADO;
-          break;
+  case FINALIZA_REINICIA_VARIBLES:
+    Reinicia_Todas_Las_Variables_Al_Termnar();
+    break;
 
-        case APUNTA_AZUL:
-          /*code*/
-          Aro_Apuntando();
-          tira.show();
-          detecto_laser = APAGADO;
-          break;
-        case DISPARO_AZUL:
-          /*code*/
-          Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
-          posicion_nueva = DISPARO_DETECTADO;
-          detecto_laser = APAGADO;
-          break;
-        }
-      }
-
-      // Deteccion de disparo o por timeout de espera que fue asignado en las figuras
-      if ((posicion_nueva == DISPARO_DETECTADO) || (salir_por_timeout == SI)) // posicion nueva es modificado en califica frecuencia
-      {
-        // marca el tiempo final del tiro
-        tiempo_termina_tiro = millis();
-        if (posicion_nueva == DISPARO_DETECTADO)
-        {
-          Serial.println("-->posicion_nueva=DISPARO_DETECTADO");
-        }
-        else
-        {
-          Serial.println("salir_por_timeout==SI");
-        }
-        // Sela del MONITOREO  y selecciona ENVIO DE RESULTADOS
-        case_proceso_encendido = ENVIA_RESULTADOS;
-        flujo_de_envio = PREPARA_PAQUETE_ENVIO;
-
-        // Activa el envio del resultado
-        activa_envio_de_resultados = SI;
-        // reinicia la deteccion del laser
-        posicion_nueva = SIN_DETECCION;
-      }
-      break;
-
-    case ENVIA_RESULTADOS:
-      Envia_Resultados_Al_Monitor();
-      break;
-
-    case FINALIZA_REINICIA_VARIBLES:
-      Reinicia_Todas_Las_Variables_Al_Termnar();
-      break;
-
-    } // fin case case_proceso_encendido
-  } // fin de switch case_estado_diana
+  } // fin case case_posicion_del_proceso
 }
 
 void Reinicia_Todas_Las_Variables_Al_Termnar()
@@ -887,11 +889,11 @@ void Reinicia_Todas_Las_Variables_Al_Termnar()
   pulsos = 0;
   captura_tiempo_inicial = SI;
   ;
-  flujo_de_envio = STANDBYE;
+  case_proceso_envio = STANDBYE;
   salir_por_timeout = NO;
 
   // reinicia varibles de menus
-  case_proceso_encendido = INICIA_STANDBYE;
+  case_posicion_del_proceso = INICIA_STANDBYE;
   prende_leds = SI;
   led_inicio = 0;
 
@@ -928,9 +930,9 @@ void Actualiza_Relojes()
 void Envia_Resultados_Al_Monitor()
 {
   Serial.println("Envia resultados al monitor");
-  Serial.println("flujo_de_envio = " + String(flujo_de_envio));
+  Serial.println("case_proceso_envio = " + String(case_proceso_envio));
 
-  switch (flujo_de_envio)
+  switch (case_proceso_envio)
   {
   case STANDBYE:
     /* solo espera */
@@ -939,11 +941,11 @@ void Envia_Resultados_Al_Monitor()
   case PREPARA_PAQUETE_ENVIO:
     Arma_Paquete_De_Envio();
     intentos_envio = 1;
-    flujo_de_envio = ENVIA_PAQUETE;
+    case_proceso_envio = ENVIA_PAQUETE;
     break;
 
   case ENVIA_PAQUETE: // se pone a primer nivel por deficion del la función
-    enviar_datos = SI;
+    habilita_enviar_paquete = SI;
     break;
 
   case PAUSA_REENVIO:
@@ -952,23 +954,22 @@ void Envia_Resultados_Al_Monitor()
     {
       if (intentos_envio < 4)
       {
-        flujo_de_envio = ENVIA_PAQUETE;
+        case_proceso_envio = ENVIA_PAQUETE;
       }
       else // manda mensaje de error
       {
         tira.clear();
-        for (int i = 2; i <= 32; i++)
-        {
-          tira.setPixelColor(i, tira.Color(0, 250, 0));
-        }
+        No_Wifi();
         tira.show();
+        delay(3000);
+        Reinicia_Todas_Las_Variables_Al_Termnar();
         Serial.println("APAGA DIANA en PAUSA REENVIO");
         case_estado_diana = APAGADO;
         captura_tiempo_inicial = NO;
       }
     }
     break;
-  } // fin switch flujo_de_envio
+  } // fin switch case_proceso_envio
 }
 
 /*------------------------------------------------------------*/
@@ -1193,153 +1194,56 @@ void calcula_frecuencia()
     nueva_frecuencia = pulsos; // asigna la frecuencia acumulada
     contador++;
     pulsos = 0; // reinicia el acumulado
-    cambio_la_frecuencia = SI;
-  }
-}
-
-/* --------------------------------------------------------*/
-void Ponderacion_Y_Obtencion_De_Frecuencia2()
-{
-  // Serial.print(">Ponderacion Frecuencia : ");
-
-  tiempo_actual_muestreo = millis();
-  // define el rango de tiempo de cada rango de muestreo
-  if ((tiempo_actual_muestreo - tiempo_inicial_muestreo) > periodo_muestreo_mseg) // espacio para obtener la muestra
-  {
-    muestra[rango_actual] = pulsos * 100;
-    // Serial.print(" Pulsos rango ["+String(rango_actual)+"] : ");
-    if (rango_actual <= 9)
-    { // incrementa el NO de muestra y reinicia periodo de muestreo
-      rango_actual++;
-      tiempo_inicial_muestreo = millis();
-      // Serial.println(pulsos*10);
-      pulsos = 0;
+    if (nueva_frecuencia>1250){
+     cambio_la_frecuencia = SI;
     }
-    else // igual a 9
+    else
     {
-      // calcula el promedio del muestreo
-      for (int i = 0; i <= 9; i++)
-      {
-        acumulado = acumulado + muestra[i];
-      }
-      promedio_muestreo = int(acumulado / 10);
-      // reasigna la frecuencia
-      nueva_frecuencia = promedio_muestreo;
-      // reinicia el acumulado y rangos
-      acumulado = 0;
-      rango_actual = 0;
-      // habilita revision del estado de la frecuencia
-      cambio_la_frecuencia = SI;
-      // Serial.print("-" + String(promedio_muestreo));
-      //  Serial.println(promedio_muestreo);
+      cambio_la_frecuencia=NO;
     }
   }
 }
 
-/* ----------------------------------------------------- */
+
+
 /* ----------------------------------------------------- */
 uint8_t Calcula__Valor_Del_Laser()
 {
   uint8_t resultado = SIN_DETECCION;
-  if (cambio_la_frecuencia == SI)
+  // Verde apunta 1.5K
+  if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + ajuste_frecuencia)))
   {
-    // Neutro 4k
-    if ((nueva_frecuencia > (frecuencia_apunta_neutro - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_neutro + ajuste_frecuencia)))
-    {
-      resultado = APUNTA_ANONIMO;
-      color_de_disparo = ARCOIRIS;
-    }
-    // Verde apunta 3K
-    if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + ajuste_frecuencia)))
-    {
-      resultado = APUNTA_VERDE;
-      color_de_disparo = GREEN;
-      Serial.println();
-      Serial.print("Apunta-Verde");
-    }
-    // Verde disparo 2k
-    if ((nueva_frecuencia > (frecuencia_disparo_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_disparo_tiro_verde + ajuste_frecuencia)))
-    {
-      resultado = DISPARO_VERDE;
-      color_de_disparo = GREEN;
-      Serial.println();
-      Serial.print("Disparo-Verde");
-    }
-    // Azul apunta 5k
-    if ((nueva_frecuencia > (frecuencia_apunta_tiro_azul - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_azul + ajuste_frecuencia)))
-    {
-      resultado = APUNTA_AZUL;
-      color_de_disparo = BLUE;
-      Serial.print("Apunta-Azul");
-    }
-    // Azul disparo 6k
-    if (nueva_frecuencia > (frecuencia_disparo_tiro_azul - ajuste_frecuencia) && (nueva_frecuencia < (frecuencia_disparo_tiro_azul + ajuste_frecuencia)))
-    {
-      resultado = DISPARO_AZUL;
-      color_de_disparo = BLUE;
-      Serial.print("Disparo-Azul");
-    }
+    resultado = APUNTA_VERDE;
+    color_de_disparo = GREEN;
+    Serial.println();
+    Serial.print("Apunta-Verde");
+  }
+  // Verde disparo 2.5K
+  if ((nueva_frecuencia > (frecuencia_disparo_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_disparo_tiro_verde + ajuste_frecuencia)))
+  {
+    resultado = DISPARO_VERDE;
+    color_de_disparo = GREEN;
+    Serial.println();
+    Serial.print("Disparo-Verde");
+  }
+  // Azul apunta 3.5K
+  if ((nueva_frecuencia > (frecuencia_apunta_tiro_azul - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_azul + ajuste_frecuencia)))
+  {
+    resultado = APUNTA_AZUL;
+    color_de_disparo = BLUE;
+    Serial.print("Apunta-Azul");
+  }
+  // Azul disparo 4.5K
+  if (nueva_frecuencia > (frecuencia_disparo_tiro_azul - ajuste_frecuencia) && (nueva_frecuencia < (frecuencia_disparo_tiro_azul + ajuste_frecuencia)))
+  {
+    resultado = DISPARO_AZUL;
+    color_de_disparo = BLUE;
+    Serial.print("Disparo-Azul");
   }
   cambio_la_frecuencia = NO; // para generar un perido para la re-evaluacion de la frecuencia
   return resultado;
 }
 
-/* ----------------------------------------------------- */
-uint8_t Calcula__Valor_Del_Laser_Ver2()
-{
-  uint8_t resultado = SIN_DETECCION;
-
-  if (cambio_la_frecuencia == SI)
-  {
-    // Serial.print(nueva_frecuencia);
-    // evalua apunta verde valor 100
-
-    if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - 19)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + 20)))
-    {
-      resultado = APUNTA_VERDE;
-      color_de_disparo = GREEN;
-      Serial.println();
-      Serial.print("Apunta-Verde");
-      detecto_laser = ENCENDIDO;
-    }
-    else
-    {
-      // evalua disparo_verde 150
-      if ((nueva_frecuencia > (frecuencia_disparo_tiro_verde - 20)) && (nueva_frecuencia < (frecuencia_disparo_tiro_verde + 20)))
-      {
-        resultado = DISPARO_VERDE;
-        color_de_disparo = GREEN;
-        Serial.println();
-        Serial.print("Disparo-Verde");
-        detecto_laser = ENCENDIDO;
-      }
-      else
-      {
-        // evalua apunta AZUL 200
-        if ((nueva_frecuencia > (frecuencia_apunta_tiro_azul - 20)) && (nueva_frecuencia < (frecuencia_apunta_tiro_azul + 20)))
-        {
-          resultado = APUNTA_AZUL;
-          color_de_disparo = BLUE;
-          Serial.print("Apunta-Azul");
-          detecto_laser = ENCENDIDO;
-        }
-        else
-        {
-          // evalua disparo AZUL
-          if (nueva_frecuencia > (frecuencia_disparo_tiro_azul - 20) && (nueva_frecuencia < (frecuencia_disparo_tiro_azul + 20)))
-          {
-            resultado = DISPARO_AZUL;
-            color_de_disparo = BLUE;
-            Serial.print("Disparo-Azul");
-            detecto_laser = ENCENDIDO;
-          }
-        }
-      }
-    }
-    cambio_la_frecuencia = NO; // para generar un perido para la re-evaluacion de la frecuencia
-  }
-  return resultado;
-}
 
 /*--------------------------------------------------------*/
 
@@ -4929,6 +4833,23 @@ void Matriz_Sin_Castigo()
   tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
+
+
+void No_Wifi(){
+  tira.setPixelColor(Pantalla[ 29],0,255,0);tira.setPixelColor(Pantalla[ 25],0,255,0);tira.setPixelColor(Pantalla[ 23],0,255,0);tira.setPixelColor(Pantalla[ 22],0,255,0);tira.setPixelColor(Pantalla[ 21],0,255,0);tira.setPixelColor(Pantalla[ 20],0,255,0);
+tira.setPixelColor(Pantalla[ 34],0,255,0);tira.setPixelColor(Pantalla[ 35],0,255,0);tira.setPixelColor(Pantalla[ 38],0,255,0);tira.setPixelColor(Pantalla[ 40],0,255,0);tira.setPixelColor(Pantalla[ 43],0,255,0);
+tira.setPixelColor(Pantalla[ 61],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);
+tira.setPixelColor(Pantalla[ 66],0,255,0);tira.setPixelColor(Pantalla[ 69],0,255,0);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);tira.setPixelColor(Pantalla[ 75],0,255,0);
+tira.setPixelColor(Pantalla[ 93],0,255,0);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);tira.setPixelColor(Pantalla[ 86],0,255,0);tira.setPixelColor(Pantalla[ 85],0,255,0);tira.setPixelColor(Pantalla[ 84],0,255,0);
+
+
+tira.setPixelColor(Pantalla[ 129],0,255,0);tira.setPixelColor(Pantalla[ 133],0,255,0);tira.setPixelColor(Pantalla[ 135],0,255,0);tira.setPixelColor(Pantalla[ 140],0,255,0);tira.setPixelColor(Pantalla[ 141],0,255,0);tira.setPixelColor(Pantalla[ 143],0,255,0);
+tira.setPixelColor(Pantalla[ 158],0,255,0);tira.setPixelColor(Pantalla[ 156],0,255,0);tira.setPixelColor(Pantalla[ 154],0,255,0);tira.setPixelColor(Pantalla[ 152],0,255,0);tira.setPixelColor(Pantalla[ 147],0,255,0);tira.setPixelColor(Pantalla[ 144],0,255,0);
+tira.setPixelColor(Pantalla[ 161],0,255,0);tira.setPixelColor(Pantalla[ 163],0,255,0);tira.setPixelColor(Pantalla[ 165],0,255,0);tira.setPixelColor(Pantalla[ 167],0,255,0);tira.setPixelColor(Pantalla[ 169],0,255,0);tira.setPixelColor(Pantalla[ 170],0,255,0);tira.setPixelColor(Pantalla[ 172],0,255,0);tira.setPixelColor(Pantalla[ 173],0,255,0);tira.setPixelColor(Pantalla[ 175],0,255,0);
+tira.setPixelColor(Pantalla[ 190],0,255,0);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 176],0,255,0);
+tira.setPixelColor(Pantalla[ 193],0,255,0);tira.setPixelColor(Pantalla[ 194],0,255,0);tira.setPixelColor(Pantalla[ 195],0,255,0);tira.setPixelColor(Pantalla[ 196],0,255,0);tira.setPixelColor(Pantalla[ 197],0,255,0);tira.setPixelColor(Pantalla[ 199],0,255,0);tira.setPixelColor(Pantalla[ 204],0,255,0);tira.setPixelColor(Pantalla[ 207],0,255,0);
+
+}
 // SIN DETECCION
 void Aro_Sin_Deteccion()
 {
