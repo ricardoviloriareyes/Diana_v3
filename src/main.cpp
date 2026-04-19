@@ -831,7 +831,7 @@ void Ejecuta_Publicidad()
   // Apaga figura para esperar el cambio
   if (temporizador_publicidad >= apaga_publicidad)
   {
-    // figura_publicidad = 0;
+    figura_publicidad = 0;
     ilumina_mira=SI;
     // tira.clear();
   }
