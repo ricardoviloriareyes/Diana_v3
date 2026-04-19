@@ -58,7 +58,6 @@ uint8_t color_de_disparo = COLOR_SIN_ASIGNAR;
 volatile unsigned long previous_time_reenvio, current_time_reenvio;
 volatile unsigned long espera_tiempo_inicial, espera_tiempo_actual;
 
-
 // varables para envio de datos a diana
 #define STANDBYE 0
 #define PREPARA_PAQUETE_ENVIO 1
@@ -277,10 +276,10 @@ int buttonstate = 0;
 // definicion de tira led
 uint8_t led_inicio = 0;
 #define NUMPIXELS 256
-Adafruit_NeoPixel tira(NUMPIXELS, pin_leds, NEO_RGB + NEO_KHZ800);
+#define NUMPIXELS1 262
+
+Adafruit_NeoPixel tira(NUMPIXELS1, pin_leds, NEO_RGB + NEO_KHZ800);
 int prende_leds = SI;
-
-
 
 /*---------------------------*/
 void Espera(int local_millisegundos_de_espera)
@@ -413,12 +412,12 @@ ulong frecuencia_disparo_tiro_publico = 0;
 ulong frecuencia_apunta_tiro_publico = 0;
 
 // los datos de las frecuencias se multiplican por 10 para obtener la frecuencia central
-int frecuencia_apunta_neutro = 500;      
-int frecuencia_apunta_tiro_verde = 1500;  
-int frecuencia_disparo_tiro_verde = 2500; 
-int frecuencia_apunta_tiro_azul = 3500;   
-int frecuencia_disparo_tiro_azul = 4500;  
-int ajuste_frecuencia = 1;               
+int frecuencia_apunta_neutro = 500;
+int frecuencia_apunta_tiro_verde = 1500;
+int frecuencia_disparo_tiro_verde = 2500;
+int frecuencia_apunta_tiro_azul = 3500;
+int frecuencia_disparo_tiro_azul = 4500;
+int ajuste_frecuencia = 1;
 
 #define SIN_DETECCION 0
 #define DISPARO_VERDE 1
@@ -432,7 +431,7 @@ uint8_t figura_actual = FIGURA_SIN_DEFINIR;
 
 /* ----------------- ENVIO DE DATOS -----------------------------*/
 int habilita_enviar_paquete = NO;
-int paquete_enviado_ok=NO;
+int paquete_enviado_ok = NO;
 String success;
 
 // Callback when data is sent
@@ -518,14 +517,14 @@ int reloj_200mseg();
 int creloj_100mseg();
 
 int8_t detecto_laser = NO;
-int8_t monitorea_frecuencia=SI;
+int8_t monitorea_frecuencia = SI;
 
-
-//publicidad
+// publicidad
 void Muestra_Figura_Publicidad(int local_figura_publicidad);
 void Ejecuta_Publicidad();
-
+void Matriz_Ilumina_Mira();
 // figuras
+
 void Matriz_Oso();
 void Matriz_Zorra();
 void Matriz_Mariposa();
@@ -665,7 +664,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
     tira.clear();
     tira.show();
     // <-
-    monitorea_frecuencia=SI;
+    monitorea_frecuencia = SI;
     // Serial.println("case_estado_diana= ENCENDIDO");
   }
   else
@@ -686,23 +685,23 @@ void Cuenta_Pulso()
 
 // Pantalla fantasma para matriz 16x16
 // Se pone una sola linea ya que concide con la tira gracias a la hoja de excel que ya da el valor
-int Pantalla[256];
+int Pantalla[262];
 
 void Asigna_Pantalla()
 {
-  for (int posicion_led = 0; posicion_led <= 255; posicion_led++)
+  for (int posicion_led = 0; posicion_led <= 261; posicion_led++)
   {
     Pantalla[posicion_led] = posicion_led;
   }
 }
 
 int contador = 0;
-int temporizador_publicidad=0;
-int enciende_publicidad =600;
-int apaga_publicidad = 606;
-int cambio_publicidad =609;
-int cambia_figura_publicidad=SI;
-int figura_publicidad=1;
+int temporizador_publicidad = 0;
+int enciende_publicidad = 60;
+int apaga_publicidad = 66;
+int cambio_publicidad = 69;
+int cambia_figura_publicidad = SI;
+int figura_publicidad = 1;
 
 /* -----------------------INICIO    S E T U P --------------------------------*/
 
@@ -764,6 +763,7 @@ void loop()
   switch (case_estado_diana)
   {
   case APAGADO:
+    // Serial.print(".");
     // Se muestra publicidad
     Ejecuta_Publicidad();
     break;
@@ -786,15 +786,15 @@ void loop()
       Reinicia_Todas_Las_Variables_Al_Termnar();
       Serial.println("Envio Paquete OK, intento : " + String(intentos_envio));
       habilita_enviar_paquete = NO;
-      paquete_enviado_ok=SI;
-      case_proceso_envio=STANDBYE;
+      paquete_enviado_ok = SI;
+      case_proceso_envio = STANDBYE;
       tira.clear();
     }
     else
     {
       Serial.println("Error envio : " + String(intentos_envio));
       intentos_envio++;
-      paquete_enviado_ok=NO;
+      paquete_enviado_ok = NO;
       case_proceso_envio = PAUSA_REENVIO;
       tira.clear();
       tira.show();
@@ -817,7 +817,7 @@ void Ejecuta_Publicidad()
     // define la figura a mostrar en el periodo
     if (temporizador_publicidad == enciende_publicidad)
     {
-      figura_publicidad = int(rand() % 10)+1;
+      figura_publicidad = int(rand() % 10) + 1;
     }
   }
   // Inicia mostrado de figura
@@ -834,7 +834,7 @@ void Ejecuta_Publicidad()
   if (temporizador_publicidad >= cambio_publicidad)
   {
     temporizador_publicidad = enciende_publicidad - 2;
-    figura_publicidad=0;
+    tira.clear();
   }
 }
 
@@ -842,11 +842,15 @@ void Muestra_Figura_Publicidad(int local_figura_publicidad)
 {
   if (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)
   {
+    Serial.print("x");
     Switchea_Izquierda_Por_Derecha();
+    tira.clear();
     switch (local_figura_publicidad)
     {
     case 0: // solo para espacio muerto entre figuras asignado por apaga_publicidad
-      tira.clear();
+      // tira.clear();
+      Matriz_Calibra();
+      Matriz_Ilumina_Mira();
       break;
     case 1:
       Matriz_Oso();
@@ -889,8 +893,6 @@ void Muestra_Figura_Publicidad(int local_figura_publicidad)
   }
 }
 
-
-
 void Analiza_Posicion_En_Encendido()
 {
 
@@ -908,7 +910,7 @@ void Analiza_Posicion_En_Encendido()
     break;
 
   case MONITOREA_DISPARO:
-    if (cambio_la_frecuencia==SI)
+    if (cambio_la_frecuencia == SI)
     {
       // detecto_laser = ENCENDIDO;
       case_valor_del_laser = Calcula__Valor_Del_Laser(); // cuando calcula modifica
@@ -941,7 +943,7 @@ void Analiza_Posicion_En_Encendido()
         Serial.print("APUNTA-VERDE");
         Aro_Apuntando();
         tira.show();
-        cambio_la_frecuencia=NO;
+        cambio_la_frecuencia = NO;
         break;
 
       case DISPARO_VERDE:
@@ -949,7 +951,7 @@ void Analiza_Posicion_En_Encendido()
         Serial.print("DISPARO-VERDE");
         Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
         posicion_nueva = DISPARO_DETECTADO;
-        monitorea_frecuencia=NO;
+        monitorea_frecuencia = NO;
         cambio_la_frecuencia = NO;
         break;
 
@@ -957,18 +959,17 @@ void Analiza_Posicion_En_Encendido()
         /*code*/
         Aro_Apuntando();
         tira.show();
-        cambio_la_frecuencia=NO;
+        cambio_la_frecuencia = NO;
         break;
       case DISPARO_AZUL:
         /*code*/
         Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
         posicion_nueva = DISPARO_DETECTADO;
-        monitorea_frecuencia=NO;
-        cambio_la_frecuencia=NO;
+        monitorea_frecuencia = NO;
+        cambio_la_frecuencia = NO;
         break;
       }
     }
-
 
     // Deteccion de disparo o por timeout de espera que fue asignado en las figuras
     if ((posicion_nueva == DISPARO_DETECTADO) || (salir_por_timeout == SI)) // posicion nueva es modificado en califica frecuencia
@@ -990,7 +991,6 @@ void Analiza_Posicion_En_Encendido()
       // reinicia la deteccion del laser
       posicion_nueva = SIN_DETECCION;
       case_posicion_del_proceso = ENVIA_RESULTADOS;
-
     }
     break;
 
@@ -1010,7 +1010,7 @@ void Reinicia_Todas_Las_Variables_Al_Termnar()
   // finaliza envio
   Serial.println("APAGA DIANA");
   case_estado_diana = APAGADO;
-  temporizador_publicidad=0; // resetea valor para que vuelva a esperar un tiempo determinado para iniciar en el estado apagado
+  temporizador_publicidad = 0; // resetea valor para que vuelva a esperar un tiempo determinado para iniciar en el estado apagado
   pulsos = 0;
   captura_tiempo_inicial = SI;
   case_proceso_envio = STANDBYE;
@@ -1318,17 +1318,16 @@ void calcula_frecuencia()
     nueva_frecuencia = pulsos; // asigna la frecuencia acumulada
     contador++;
     pulsos = 0; // reinicia el acumulado
-    if (nueva_frecuencia>1250){
-     cambio_la_frecuencia = SI;
+    if (nueva_frecuencia > 1250)
+    {
+      cambio_la_frecuencia = SI;
     }
     else
     {
-      cambio_la_frecuencia=NO;
+      cambio_la_frecuencia = NO;
     }
   }
 }
-
-
 
 /* ----------------------------------------------------- */
 uint8_t Calcula__Valor_Del_Laser()
@@ -1367,7 +1366,6 @@ uint8_t Calcula__Valor_Del_Laser()
   cambio_la_frecuencia = NO; // para generar un perido para la re-evaluacion de la frecuencia
   return resultado;
 }
-
 
 /*--------------------------------------------------------*/
 
@@ -1567,9 +1565,9 @@ uint8_t Evalua_Figura_Normal()
         }
         else
         {
-            resultado_figura = NORMAL_LAGARTIJA;
-            valor_puntuacion_figura = PUNTOS_NORMAL_LAGARTIJA;
-            Matriz_Lagartija();
+          resultado_figura = NORMAL_LAGARTIJA;
+          valor_puntuacion_figura = PUNTOS_NORMAL_LAGARTIJA;
+          Matriz_Lagartija();
           // salir_por_timeout=SI;
         }
       } // end if vf*3
@@ -3465,6 +3463,35 @@ void Matriz_Corazon()
   tira.setPixelColor(Pantalla[215], 0, 255, 0);
 }
 
+void Matriz_Ilumina_Mira()
+{
+  if (lado== IZQUIERDA)
+  {
+     tira.setPixelColor(Pantalla[256], 255, 0, 0);
+  tira.setPixelColor(Pantalla[257], 255, 0, 0);
+  tira.setPixelColor(Pantalla[258], 0, 0, 255);
+  tira.setPixelColor(Pantalla[259], 0,0,255);
+  tira.setPixelColor(Pantalla[260], 255, 0, 0);
+  tira.setPixelColor(Pantalla[261],255, 0, 0); 
+  }
+  else{
+  tira.setPixelColor(Pantalla[256], 0, 0, 255);
+  tira.setPixelColor(Pantalla[257], 0, 0, 255);
+  tira.setPixelColor(Pantalla[258], 255, 0, 0);
+  tira.setPixelColor(Pantalla[259], 255,0,0);
+  tira.setPixelColor(Pantalla[260], 0, 0,255);
+  tira.setPixelColor(Pantalla[261], 0, 0, 255);  
+  }
+
+  // tira.setPixelColor(Pantalla[256], (rand() % 245), (rand() % 245), (rand() % 245));
+  // tira.setPixelColor(Pantalla[257], (rand() % 245), (rand() % 245), (rand() % 245));
+  // tira.setPixelColor(Pantalla[258], (rand() % 245), (rand() % 245), (rand() % 245));
+  // tira.setPixelColor(Pantalla[259], (rand() % 245), (rand() % 245), ( rand() % 245));
+  // tira.setPixelColor(Pantalla[260], (rand() % 245), ( rand() % 245), (rand() % 245));
+  // tira.setPixelColor(Pantalla[261], (rand() % 245), (rand() % 245), (rand() % 245));
+
+}
+
 void Matriz_Oso()
 {
 
@@ -4937,22 +4964,71 @@ void Matriz_Sin_Castigo()
   tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
+void No_Wifi()
+{
+  tira.setPixelColor(Pantalla[29], 0, 255, 0);
+  tira.setPixelColor(Pantalla[25], 0, 255, 0);
+  tira.setPixelColor(Pantalla[23], 0, 255, 0);
+  tira.setPixelColor(Pantalla[22], 0, 255, 0);
+  tira.setPixelColor(Pantalla[21], 0, 255, 0);
+  tira.setPixelColor(Pantalla[20], 0, 255, 0);
+  tira.setPixelColor(Pantalla[34], 0, 255, 0);
+  tira.setPixelColor(Pantalla[35], 0, 255, 0);
+  tira.setPixelColor(Pantalla[38], 0, 255, 0);
+  tira.setPixelColor(Pantalla[40], 0, 255, 0);
+  tira.setPixelColor(Pantalla[43], 0, 255, 0);
+  tira.setPixelColor(Pantalla[61], 0, 255, 0);
+  tira.setPixelColor(Pantalla[59], 0, 255, 0);
+  tira.setPixelColor(Pantalla[57], 0, 255, 0);
+  tira.setPixelColor(Pantalla[55], 0, 255, 0);
+  tira.setPixelColor(Pantalla[52], 0, 255, 0);
+  tira.setPixelColor(Pantalla[66], 0, 255, 0);
+  tira.setPixelColor(Pantalla[69], 0, 255, 0);
+  tira.setPixelColor(Pantalla[70], 0, 255, 0);
+  tira.setPixelColor(Pantalla[72], 0, 255, 0);
+  tira.setPixelColor(Pantalla[75], 0, 255, 0);
+  tira.setPixelColor(Pantalla[93], 0, 255, 0);
+  tira.setPixelColor(Pantalla[89], 0, 255, 0);
+  tira.setPixelColor(Pantalla[87], 0, 255, 0);
+  tira.setPixelColor(Pantalla[86], 0, 255, 0);
+  tira.setPixelColor(Pantalla[85], 0, 255, 0);
+  tira.setPixelColor(Pantalla[84], 0, 255, 0);
 
-
-void No_Wifi(){
-  tira.setPixelColor(Pantalla[ 29],0,255,0);tira.setPixelColor(Pantalla[ 25],0,255,0);tira.setPixelColor(Pantalla[ 23],0,255,0);tira.setPixelColor(Pantalla[ 22],0,255,0);tira.setPixelColor(Pantalla[ 21],0,255,0);tira.setPixelColor(Pantalla[ 20],0,255,0);
-tira.setPixelColor(Pantalla[ 34],0,255,0);tira.setPixelColor(Pantalla[ 35],0,255,0);tira.setPixelColor(Pantalla[ 38],0,255,0);tira.setPixelColor(Pantalla[ 40],0,255,0);tira.setPixelColor(Pantalla[ 43],0,255,0);
-tira.setPixelColor(Pantalla[ 61],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);
-tira.setPixelColor(Pantalla[ 66],0,255,0);tira.setPixelColor(Pantalla[ 69],0,255,0);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);tira.setPixelColor(Pantalla[ 75],0,255,0);
-tira.setPixelColor(Pantalla[ 93],0,255,0);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);tira.setPixelColor(Pantalla[ 86],0,255,0);tira.setPixelColor(Pantalla[ 85],0,255,0);tira.setPixelColor(Pantalla[ 84],0,255,0);
-
-
-tira.setPixelColor(Pantalla[ 129],0,255,0);tira.setPixelColor(Pantalla[ 133],0,255,0);tira.setPixelColor(Pantalla[ 135],0,255,0);tira.setPixelColor(Pantalla[ 140],0,255,0);tira.setPixelColor(Pantalla[ 141],0,255,0);tira.setPixelColor(Pantalla[ 143],0,255,0);
-tira.setPixelColor(Pantalla[ 158],0,255,0);tira.setPixelColor(Pantalla[ 156],0,255,0);tira.setPixelColor(Pantalla[ 154],0,255,0);tira.setPixelColor(Pantalla[ 152],0,255,0);tira.setPixelColor(Pantalla[ 147],0,255,0);tira.setPixelColor(Pantalla[ 144],0,255,0);
-tira.setPixelColor(Pantalla[ 161],0,255,0);tira.setPixelColor(Pantalla[ 163],0,255,0);tira.setPixelColor(Pantalla[ 165],0,255,0);tira.setPixelColor(Pantalla[ 167],0,255,0);tira.setPixelColor(Pantalla[ 169],0,255,0);tira.setPixelColor(Pantalla[ 170],0,255,0);tira.setPixelColor(Pantalla[ 172],0,255,0);tira.setPixelColor(Pantalla[ 173],0,255,0);tira.setPixelColor(Pantalla[ 175],0,255,0);
-tira.setPixelColor(Pantalla[ 190],0,255,0);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 176],0,255,0);
-tira.setPixelColor(Pantalla[ 193],0,255,0);tira.setPixelColor(Pantalla[ 194],0,255,0);tira.setPixelColor(Pantalla[ 195],0,255,0);tira.setPixelColor(Pantalla[ 196],0,255,0);tira.setPixelColor(Pantalla[ 197],0,255,0);tira.setPixelColor(Pantalla[ 199],0,255,0);tira.setPixelColor(Pantalla[ 204],0,255,0);tira.setPixelColor(Pantalla[ 207],0,255,0);
-
+  tira.setPixelColor(Pantalla[129], 0, 255, 0);
+  tira.setPixelColor(Pantalla[133], 0, 255, 0);
+  tira.setPixelColor(Pantalla[135], 0, 255, 0);
+  tira.setPixelColor(Pantalla[140], 0, 255, 0);
+  tira.setPixelColor(Pantalla[141], 0, 255, 0);
+  tira.setPixelColor(Pantalla[143], 0, 255, 0);
+  tira.setPixelColor(Pantalla[158], 0, 255, 0);
+  tira.setPixelColor(Pantalla[156], 0, 255, 0);
+  tira.setPixelColor(Pantalla[154], 0, 255, 0);
+  tira.setPixelColor(Pantalla[152], 0, 255, 0);
+  tira.setPixelColor(Pantalla[147], 0, 255, 0);
+  tira.setPixelColor(Pantalla[144], 0, 255, 0);
+  tira.setPixelColor(Pantalla[161], 0, 255, 0);
+  tira.setPixelColor(Pantalla[163], 0, 255, 0);
+  tira.setPixelColor(Pantalla[165], 0, 255, 0);
+  tira.setPixelColor(Pantalla[167], 0, 255, 0);
+  tira.setPixelColor(Pantalla[169], 0, 255, 0);
+  tira.setPixelColor(Pantalla[170], 0, 255, 0);
+  tira.setPixelColor(Pantalla[172], 0, 255, 0);
+  tira.setPixelColor(Pantalla[173], 0, 255, 0);
+  tira.setPixelColor(Pantalla[175], 0, 255, 0);
+  tira.setPixelColor(Pantalla[190], 0, 255, 0);
+  tira.setPixelColor(Pantalla[188], 0, 255, 0);
+  tira.setPixelColor(Pantalla[186], 0, 255, 0);
+  tira.setPixelColor(Pantalla[184], 0, 255, 0);
+  tira.setPixelColor(Pantalla[179], 0, 255, 0);
+  tira.setPixelColor(Pantalla[176], 0, 255, 0);
+  tira.setPixelColor(Pantalla[193], 0, 255, 0);
+  tira.setPixelColor(Pantalla[194], 0, 255, 0);
+  tira.setPixelColor(Pantalla[195], 0, 255, 0);
+  tira.setPixelColor(Pantalla[196], 0, 255, 0);
+  tira.setPixelColor(Pantalla[197], 0, 255, 0);
+  tira.setPixelColor(Pantalla[199], 0, 255, 0);
+  tira.setPixelColor(Pantalla[204], 0, 255, 0);
+  tira.setPixelColor(Pantalla[207], 0, 255, 0);
 }
 // SIN DETECCION
 void Aro_Sin_Deteccion()
@@ -5352,216 +5428,858 @@ void Matriz_Valor_De_Tiro(uint8_t local_color_de_disparo)
   }
 }
 
-void Matriz_Green(){
-tira.setPixelColor(Pantalla[ 0],255,0,0);tira.setPixelColor(Pantalla[ 1],255,0,0);tira.setPixelColor(Pantalla[ 2],255,0,0);tira.setPixelColor(Pantalla[ 3],255,0,0);tira.setPixelColor(Pantalla[ 4],255,0,0);tira.setPixelColor(Pantalla[ 5],255,0,0);tira.setPixelColor(Pantalla[ 6],255,0,0);tira.setPixelColor(Pantalla[ 7],255,0,0);tira.setPixelColor(Pantalla[ 8],255,0,0);tira.setPixelColor(Pantalla[ 9],255,0,0);tira.setPixelColor(Pantalla[ 10],255,0,0);tira.setPixelColor(Pantalla[ 11],255,0,0);tira.setPixelColor(Pantalla[ 12],255,0,0);tira.setPixelColor(Pantalla[ 13],255,0,0);tira.setPixelColor(Pantalla[ 14],255,0,0);tira.setPixelColor(Pantalla[ 15],255,0,0);
-tira.setPixelColor(Pantalla[ 31],255,0,0);tira.setPixelColor(Pantalla[ 30],255,0,0);tira.setPixelColor(Pantalla[ 29],255,0,0);tira.setPixelColor(Pantalla[ 28],255,0,0);tira.setPixelColor(Pantalla[ 27],255,0,0);tira.setPixelColor(Pantalla[ 26],255,0,0);tira.setPixelColor(Pantalla[ 25],255,0,0);tira.setPixelColor(Pantalla[ 24],255,0,0);tira.setPixelColor(Pantalla[ 23],255,0,0);tira.setPixelColor(Pantalla[ 22],255,0,0);tira.setPixelColor(Pantalla[ 21],255,0,0);tira.setPixelColor(Pantalla[ 20],255,0,0);tira.setPixelColor(Pantalla[ 19],255,0,0);tira.setPixelColor(Pantalla[ 18],255,0,0);tira.setPixelColor(Pantalla[ 17],255,0,0);tira.setPixelColor(Pantalla[ 16],255,0,0);
-tira.setPixelColor(Pantalla[ 223],255,0,0);tira.setPixelColor(Pantalla[ 222],255,0,0);tira.setPixelColor(Pantalla[ 221],255,0,0);tira.setPixelColor(Pantalla[ 220],255,0,0);tira.setPixelColor(Pantalla[ 219],255,0,0);tira.setPixelColor(Pantalla[ 218],255,0,0);tira.setPixelColor(Pantalla[ 217],255,0,0);tira.setPixelColor(Pantalla[ 216],255,0,0);tira.setPixelColor(Pantalla[ 215],255,0,0);tira.setPixelColor(Pantalla[ 214],255,0,0);tira.setPixelColor(Pantalla[ 213],255,0,0);tira.setPixelColor(Pantalla[ 212],255,0,0);tira.setPixelColor(Pantalla[ 211],255,0,0);tira.setPixelColor(Pantalla[ 210],255,0,0);tira.setPixelColor(Pantalla[ 209],255,0,0);tira.setPixelColor(Pantalla[ 208],255,0,0);
-tira.setPixelColor(Pantalla[ 224],255,0,0);tira.setPixelColor(Pantalla[ 225],255,0,0);tira.setPixelColor(Pantalla[ 226],255,0,0);tira.setPixelColor(Pantalla[ 227],255,0,0);tira.setPixelColor(Pantalla[ 228],255,0,0);tira.setPixelColor(Pantalla[ 229],255,0,0);tira.setPixelColor(Pantalla[ 230],255,0,0);tira.setPixelColor(Pantalla[ 231],255,0,0);tira.setPixelColor(Pantalla[ 232],255,0,0);tira.setPixelColor(Pantalla[ 233],255,0,0);tira.setPixelColor(Pantalla[ 234],255,0,0);tira.setPixelColor(Pantalla[ 235],255,0,0);tira.setPixelColor(Pantalla[ 236],255,0,0);tira.setPixelColor(Pantalla[ 237],255,0,0);tira.setPixelColor(Pantalla[ 238],255,0,0);tira.setPixelColor(Pantalla[ 239],255,0,0);
-tira.setPixelColor(Pantalla[ 255],255,0,0);tira.setPixelColor(Pantalla[ 254],255,0,0);tira.setPixelColor(Pantalla[ 253],255,0,0);tira.setPixelColor(Pantalla[ 252],255,0,0);tira.setPixelColor(Pantalla[ 251],255,0,0);tira.setPixelColor(Pantalla[ 250],255,0,0);tira.setPixelColor(Pantalla[ 249],255,0,0);tira.setPixelColor(Pantalla[ 248],255,0,0);tira.setPixelColor(Pantalla[ 247],255,0,0);tira.setPixelColor(Pantalla[ 246],255,0,0);tira.setPixelColor(Pantalla[ 245],255,0,0);tira.setPixelColor(Pantalla[ 244],255,0,0);tira.setPixelColor(Pantalla[ 243],255,0,0);tira.setPixelColor(Pantalla[ 242],255,0,0);tira.setPixelColor(Pantalla[ 241],255,0,0);tira.setPixelColor(Pantalla[ 240],255,0,0);
-
+void Matriz_Green()
+{
+  tira.setPixelColor(Pantalla[0], 255, 0, 0);
+  tira.setPixelColor(Pantalla[1], 255, 0, 0);
+  tira.setPixelColor(Pantalla[2], 255, 0, 0);
+  tira.setPixelColor(Pantalla[3], 255, 0, 0);
+  tira.setPixelColor(Pantalla[4], 255, 0, 0);
+  tira.setPixelColor(Pantalla[5], 255, 0, 0);
+  tira.setPixelColor(Pantalla[6], 255, 0, 0);
+  tira.setPixelColor(Pantalla[7], 255, 0, 0);
+  tira.setPixelColor(Pantalla[8], 255, 0, 0);
+  tira.setPixelColor(Pantalla[9], 255, 0, 0);
+  tira.setPixelColor(Pantalla[10], 255, 0, 0);
+  tira.setPixelColor(Pantalla[11], 255, 0, 0);
+  tira.setPixelColor(Pantalla[12], 255, 0, 0);
+  tira.setPixelColor(Pantalla[13], 255, 0, 0);
+  tira.setPixelColor(Pantalla[14], 255, 0, 0);
+  tira.setPixelColor(Pantalla[15], 255, 0, 0);
+  tira.setPixelColor(Pantalla[31], 255, 0, 0);
+  tira.setPixelColor(Pantalla[30], 255, 0, 0);
+  tira.setPixelColor(Pantalla[29], 255, 0, 0);
+  tira.setPixelColor(Pantalla[28], 255, 0, 0);
+  tira.setPixelColor(Pantalla[27], 255, 0, 0);
+  tira.setPixelColor(Pantalla[26], 255, 0, 0);
+  tira.setPixelColor(Pantalla[25], 255, 0, 0);
+  tira.setPixelColor(Pantalla[24], 255, 0, 0);
+  tira.setPixelColor(Pantalla[23], 255, 0, 0);
+  tira.setPixelColor(Pantalla[22], 255, 0, 0);
+  tira.setPixelColor(Pantalla[21], 255, 0, 0);
+  tira.setPixelColor(Pantalla[20], 255, 0, 0);
+  tira.setPixelColor(Pantalla[19], 255, 0, 0);
+  tira.setPixelColor(Pantalla[18], 255, 0, 0);
+  tira.setPixelColor(Pantalla[17], 255, 0, 0);
+  tira.setPixelColor(Pantalla[16], 255, 0, 0);
+  tira.setPixelColor(Pantalla[223], 255, 0, 0);
+  tira.setPixelColor(Pantalla[222], 255, 0, 0);
+  tira.setPixelColor(Pantalla[221], 255, 0, 0);
+  tira.setPixelColor(Pantalla[220], 255, 0, 0);
+  tira.setPixelColor(Pantalla[219], 255, 0, 0);
+  tira.setPixelColor(Pantalla[218], 255, 0, 0);
+  tira.setPixelColor(Pantalla[217], 255, 0, 0);
+  tira.setPixelColor(Pantalla[216], 255, 0, 0);
+  tira.setPixelColor(Pantalla[215], 255, 0, 0);
+  tira.setPixelColor(Pantalla[214], 255, 0, 0);
+  tira.setPixelColor(Pantalla[213], 255, 0, 0);
+  tira.setPixelColor(Pantalla[212], 255, 0, 0);
+  tira.setPixelColor(Pantalla[211], 255, 0, 0);
+  tira.setPixelColor(Pantalla[210], 255, 0, 0);
+  tira.setPixelColor(Pantalla[209], 255, 0, 0);
+  tira.setPixelColor(Pantalla[208], 255, 0, 0);
+  tira.setPixelColor(Pantalla[224], 255, 0, 0);
+  tira.setPixelColor(Pantalla[225], 255, 0, 0);
+  tira.setPixelColor(Pantalla[226], 255, 0, 0);
+  tira.setPixelColor(Pantalla[227], 255, 0, 0);
+  tira.setPixelColor(Pantalla[228], 255, 0, 0);
+  tira.setPixelColor(Pantalla[229], 255, 0, 0);
+  tira.setPixelColor(Pantalla[230], 255, 0, 0);
+  tira.setPixelColor(Pantalla[231], 255, 0, 0);
+  tira.setPixelColor(Pantalla[232], 255, 0, 0);
+  tira.setPixelColor(Pantalla[233], 255, 0, 0);
+  tira.setPixelColor(Pantalla[234], 255, 0, 0);
+  tira.setPixelColor(Pantalla[235], 255, 0, 0);
+  tira.setPixelColor(Pantalla[236], 255, 0, 0);
+  tira.setPixelColor(Pantalla[237], 255, 0, 0);
+  tira.setPixelColor(Pantalla[238], 255, 0, 0);
+  tira.setPixelColor(Pantalla[239], 255, 0, 0);
+  tira.setPixelColor(Pantalla[255], 255, 0, 0);
+  tira.setPixelColor(Pantalla[254], 255, 0, 0);
+  tira.setPixelColor(Pantalla[253], 255, 0, 0);
+  tira.setPixelColor(Pantalla[252], 255, 0, 0);
+  tira.setPixelColor(Pantalla[251], 255, 0, 0);
+  tira.setPixelColor(Pantalla[250], 255, 0, 0);
+  tira.setPixelColor(Pantalla[249], 255, 0, 0);
+  tira.setPixelColor(Pantalla[248], 255, 0, 0);
+  tira.setPixelColor(Pantalla[247], 255, 0, 0);
+  tira.setPixelColor(Pantalla[246], 255, 0, 0);
+  tira.setPixelColor(Pantalla[245], 255, 0, 0);
+  tira.setPixelColor(Pantalla[244], 255, 0, 0);
+  tira.setPixelColor(Pantalla[243], 255, 0, 0);
+  tira.setPixelColor(Pantalla[242], 255, 0, 0);
+  tira.setPixelColor(Pantalla[241], 255, 0, 0);
+  tira.setPixelColor(Pantalla[240], 255, 0, 0);
 }
 
-void Matriz_Blue(){
-tira.setPixelColor(Pantalla[ 0],0,0,255);tira.setPixelColor(Pantalla[ 1],0,0,255);tira.setPixelColor(Pantalla[ 2],0,0,255);tira.setPixelColor(Pantalla[ 3],0,0,255);tira.setPixelColor(Pantalla[ 4],0,0,255);tira.setPixelColor(Pantalla[ 5],0,0,255);tira.setPixelColor(Pantalla[ 6],0,0,255);tira.setPixelColor(Pantalla[ 7],0,0,255);tira.setPixelColor(Pantalla[ 8],0,0,255);tira.setPixelColor(Pantalla[ 9],0,0,255);tira.setPixelColor(Pantalla[ 10],0,0,255);tira.setPixelColor(Pantalla[ 11],0,0,255);tira.setPixelColor(Pantalla[ 12],0,0,255);tira.setPixelColor(Pantalla[ 13],0,0,255);tira.setPixelColor(Pantalla[ 14],0,0,255);tira.setPixelColor(Pantalla[ 15],0,0,255);
-tira.setPixelColor(Pantalla[ 31],0,0,255);tira.setPixelColor(Pantalla[ 30],0,0,255);tira.setPixelColor(Pantalla[ 29],0,0,255);tira.setPixelColor(Pantalla[ 28],0,0,255);tira.setPixelColor(Pantalla[ 27],0,0,255);tira.setPixelColor(Pantalla[ 26],0,0,255);tira.setPixelColor(Pantalla[ 25],0,0,255);tira.setPixelColor(Pantalla[ 24],0,0,255);tira.setPixelColor(Pantalla[ 23],0,0,255);tira.setPixelColor(Pantalla[ 22],0,0,255);tira.setPixelColor(Pantalla[ 21],0,0,255);tira.setPixelColor(Pantalla[ 20],0,0,255);tira.setPixelColor(Pantalla[ 19],0,0,255);tira.setPixelColor(Pantalla[ 18],0,0,255);tira.setPixelColor(Pantalla[ 17],0,0,255);tira.setPixelColor(Pantalla[ 16],0,0,255);
-tira.setPixelColor(Pantalla[ 223],0,0,255);tira.setPixelColor(Pantalla[ 222],0,0,255);tira.setPixelColor(Pantalla[ 221],0,0,255);tira.setPixelColor(Pantalla[ 220],0,0,255);tira.setPixelColor(Pantalla[ 219],0,0,255);tira.setPixelColor(Pantalla[ 218],0,0,255);tira.setPixelColor(Pantalla[ 217],0,0,255);tira.setPixelColor(Pantalla[ 216],0,0,255);tira.setPixelColor(Pantalla[ 215],0,0,255);tira.setPixelColor(Pantalla[ 214],0,0,255);tira.setPixelColor(Pantalla[ 213],0,0,255);tira.setPixelColor(Pantalla[ 212],0,0,255);tira.setPixelColor(Pantalla[ 211],0,0,255);tira.setPixelColor(Pantalla[ 210],0,0,255);tira.setPixelColor(Pantalla[ 209],0,0,255);tira.setPixelColor(Pantalla[ 208],0,0,255);
-tira.setPixelColor(Pantalla[ 224],0,0,255);tira.setPixelColor(Pantalla[ 225],0,0,255);tira.setPixelColor(Pantalla[ 226],0,0,255);tira.setPixelColor(Pantalla[ 227],0,0,255);tira.setPixelColor(Pantalla[ 228],0,0,255);tira.setPixelColor(Pantalla[ 229],0,0,255);tira.setPixelColor(Pantalla[ 230],0,0,255);tira.setPixelColor(Pantalla[ 231],0,0,255);tira.setPixelColor(Pantalla[ 232],0,0,255);tira.setPixelColor(Pantalla[ 233],0,0,255);tira.setPixelColor(Pantalla[ 234],0,0,255);tira.setPixelColor(Pantalla[ 235],0,0,255);tira.setPixelColor(Pantalla[ 236],0,0,255);tira.setPixelColor(Pantalla[ 237],0,0,255);tira.setPixelColor(Pantalla[ 238],0,0,255);tira.setPixelColor(Pantalla[ 239],0,0,255);
-tira.setPixelColor(Pantalla[ 255],0,0,255);tira.setPixelColor(Pantalla[ 254],0,0,255);tira.setPixelColor(Pantalla[ 253],0,0,255);tira.setPixelColor(Pantalla[ 252],0,0,255);tira.setPixelColor(Pantalla[ 251],0,0,255);tira.setPixelColor(Pantalla[ 250],0,0,255);tira.setPixelColor(Pantalla[ 249],0,0,255);tira.setPixelColor(Pantalla[ 248],0,0,255);tira.setPixelColor(Pantalla[ 247],0,0,255);tira.setPixelColor(Pantalla[ 246],0,0,255);tira.setPixelColor(Pantalla[ 245],0,0,255);tira.setPixelColor(Pantalla[ 244],0,0,255);tira.setPixelColor(Pantalla[ 243],0,0,255);tira.setPixelColor(Pantalla[ 242],0,0,255);tira.setPixelColor(Pantalla[ 241],0,0,255);tira.setPixelColor(Pantalla[ 240],0,0,255);
-
+void Matriz_Blue()
+{
+  tira.setPixelColor(Pantalla[0], 0, 0, 255);
+  tira.setPixelColor(Pantalla[1], 0, 0, 255);
+  tira.setPixelColor(Pantalla[2], 0, 0, 255);
+  tira.setPixelColor(Pantalla[3], 0, 0, 255);
+  tira.setPixelColor(Pantalla[4], 0, 0, 255);
+  tira.setPixelColor(Pantalla[5], 0, 0, 255);
+  tira.setPixelColor(Pantalla[6], 0, 0, 255);
+  tira.setPixelColor(Pantalla[7], 0, 0, 255);
+  tira.setPixelColor(Pantalla[8], 0, 0, 255);
+  tira.setPixelColor(Pantalla[9], 0, 0, 255);
+  tira.setPixelColor(Pantalla[10], 0, 0, 255);
+  tira.setPixelColor(Pantalla[11], 0, 0, 255);
+  tira.setPixelColor(Pantalla[12], 0, 0, 255);
+  tira.setPixelColor(Pantalla[13], 0, 0, 255);
+  tira.setPixelColor(Pantalla[14], 0, 0, 255);
+  tira.setPixelColor(Pantalla[15], 0, 0, 255);
+  tira.setPixelColor(Pantalla[31], 0, 0, 255);
+  tira.setPixelColor(Pantalla[30], 0, 0, 255);
+  tira.setPixelColor(Pantalla[29], 0, 0, 255);
+  tira.setPixelColor(Pantalla[28], 0, 0, 255);
+  tira.setPixelColor(Pantalla[27], 0, 0, 255);
+  tira.setPixelColor(Pantalla[26], 0, 0, 255);
+  tira.setPixelColor(Pantalla[25], 0, 0, 255);
+  tira.setPixelColor(Pantalla[24], 0, 0, 255);
+  tira.setPixelColor(Pantalla[23], 0, 0, 255);
+  tira.setPixelColor(Pantalla[22], 0, 0, 255);
+  tira.setPixelColor(Pantalla[21], 0, 0, 255);
+  tira.setPixelColor(Pantalla[20], 0, 0, 255);
+  tira.setPixelColor(Pantalla[19], 0, 0, 255);
+  tira.setPixelColor(Pantalla[18], 0, 0, 255);
+  tira.setPixelColor(Pantalla[17], 0, 0, 255);
+  tira.setPixelColor(Pantalla[16], 0, 0, 255);
+  tira.setPixelColor(Pantalla[223], 0, 0, 255);
+  tira.setPixelColor(Pantalla[222], 0, 0, 255);
+  tira.setPixelColor(Pantalla[221], 0, 0, 255);
+  tira.setPixelColor(Pantalla[220], 0, 0, 255);
+  tira.setPixelColor(Pantalla[219], 0, 0, 255);
+  tira.setPixelColor(Pantalla[218], 0, 0, 255);
+  tira.setPixelColor(Pantalla[217], 0, 0, 255);
+  tira.setPixelColor(Pantalla[216], 0, 0, 255);
+  tira.setPixelColor(Pantalla[215], 0, 0, 255);
+  tira.setPixelColor(Pantalla[214], 0, 0, 255);
+  tira.setPixelColor(Pantalla[213], 0, 0, 255);
+  tira.setPixelColor(Pantalla[212], 0, 0, 255);
+  tira.setPixelColor(Pantalla[211], 0, 0, 255);
+  tira.setPixelColor(Pantalla[210], 0, 0, 255);
+  tira.setPixelColor(Pantalla[209], 0, 0, 255);
+  tira.setPixelColor(Pantalla[208], 0, 0, 255);
+  tira.setPixelColor(Pantalla[224], 0, 0, 255);
+  tira.setPixelColor(Pantalla[225], 0, 0, 255);
+  tira.setPixelColor(Pantalla[226], 0, 0, 255);
+  tira.setPixelColor(Pantalla[227], 0, 0, 255);
+  tira.setPixelColor(Pantalla[228], 0, 0, 255);
+  tira.setPixelColor(Pantalla[229], 0, 0, 255);
+  tira.setPixelColor(Pantalla[230], 0, 0, 255);
+  tira.setPixelColor(Pantalla[231], 0, 0, 255);
+  tira.setPixelColor(Pantalla[232], 0, 0, 255);
+  tira.setPixelColor(Pantalla[233], 0, 0, 255);
+  tira.setPixelColor(Pantalla[234], 0, 0, 255);
+  tira.setPixelColor(Pantalla[235], 0, 0, 255);
+  tira.setPixelColor(Pantalla[236], 0, 0, 255);
+  tira.setPixelColor(Pantalla[237], 0, 0, 255);
+  tira.setPixelColor(Pantalla[238], 0, 0, 255);
+  tira.setPixelColor(Pantalla[239], 0, 0, 255);
+  tira.setPixelColor(Pantalla[255], 0, 0, 255);
+  tira.setPixelColor(Pantalla[254], 0, 0, 255);
+  tira.setPixelColor(Pantalla[253], 0, 0, 255);
+  tira.setPixelColor(Pantalla[252], 0, 0, 255);
+  tira.setPixelColor(Pantalla[251], 0, 0, 255);
+  tira.setPixelColor(Pantalla[250], 0, 0, 255);
+  tira.setPixelColor(Pantalla[249], 0, 0, 255);
+  tira.setPixelColor(Pantalla[248], 0, 0, 255);
+  tira.setPixelColor(Pantalla[247], 0, 0, 255);
+  tira.setPixelColor(Pantalla[246], 0, 0, 255);
+  tira.setPixelColor(Pantalla[245], 0, 0, 255);
+  tira.setPixelColor(Pantalla[244], 0, 0, 255);
+  tira.setPixelColor(Pantalla[243], 0, 0, 255);
+  tira.setPixelColor(Pantalla[242], 0, 0, 255);
+  tira.setPixelColor(Pantalla[241], 0, 0, 255);
+  tira.setPixelColor(Pantalla[240], 0, 0, 255);
 }
-
 
 void Matriz_100()
 {
-tira.setPixelColor(Pantalla[ 62],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 56],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 55],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 69],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 72],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 74],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 90],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 87],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 85],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 101],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 104],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 106],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 119],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 117],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 130],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 133],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 136],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 138],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 157],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 154],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 151],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 149],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 162],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 165],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 168],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 170],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 190],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 184],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 183],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+  tira.setPixelColor(Pantalla[62], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[56], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[55], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[69], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[72], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[74], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[90], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[87], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[85], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[101], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[104], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[106], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[119], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[117], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[130], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[133], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[136], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[138], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[157], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[154], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[151], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[149], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[162], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[165], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[168], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[170], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[190], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[184], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[183], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
 void Matriz_90()
 {
- tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
- 
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
 void Matriz_80()
 {
-tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 130],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 157],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 162],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[130], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[157], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[162], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[187], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
-void Matriz_75(){
-tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 117],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 116],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 115],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+void Matriz_75()
+{
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[117], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[116], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[115], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
 void Matriz_70()
 {
- tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
 void Matriz_60()
 {
- tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 130],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 157],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 162],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
- 
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[130], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[157], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[162], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[187], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
 void Matriz_50()
 {
- tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
- 
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[187], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
-void Matriz_45(){
-tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 117],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 116],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 115],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+void Matriz_45()
+{
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[117], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[116], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[115], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
-
 
 void Matriz_40()
 {
- tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 66],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 93],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 98],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[66], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[93], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[98], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
-void Matriz_35(){
-tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 117],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 116],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 115],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+void Matriz_35()
+{
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[117], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[116], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[115], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[187], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
-void Matriz_30(){
-tira.setPixelColor(Pantalla[ 61],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 60],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 59],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 58],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 57],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 54],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 53],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 52],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 51],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 50],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 70],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 73],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 77],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 89],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 86],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 82],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 102],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 105],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 109],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 125],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 124],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 123],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 122],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 121],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 118],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 114],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 134],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 137],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 141],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 153],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 150],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 146],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 166],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 169],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 173],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-tira.setPixelColor(Pantalla[ 189],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 188],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 187],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 186],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 185],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 182],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 181],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 180],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 179],(10+rand()%245),(10+rand()%245),(10+rand()%245));tira.setPixelColor(Pantalla[ 178],(10+rand()%245),(10+rand()%245),(10+rand()%245));
-
+void Matriz_30()
+{
+  tira.setPixelColor(Pantalla[61], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[60], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[59], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[58], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[57], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[54], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[53], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[52], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[51], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[50], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[70], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[73], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[77], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[89], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[86], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[82], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[102], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[105], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[109], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[125], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[124], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[123], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[122], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[121], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[118], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[114], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[134], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[137], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[141], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[153], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[150], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[146], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[166], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[169], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[173], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[189], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[188], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[187], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[186], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[185], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[182], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[181], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[180], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[179], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
+  tira.setPixelColor(Pantalla[178], (10 + rand() % 245), (10 + rand() % 245), (10 + rand() % 245));
 }
 
-void Matriz_200_Negativo(){
-tira.setPixelColor(Pantalla[ 62],0,255,0);tira.setPixelColor(Pantalla[ 61],0,255,0);tira.setPixelColor(Pantalla[ 60],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 56],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 54],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);tira.setPixelColor(Pantalla[ 50],0,255,0);tira.setPixelColor(Pantalla[ 49],0,255,0);
-tira.setPixelColor(Pantalla[ 68],0,255,0);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 73],0,255,0);tira.setPixelColor(Pantalla[ 75],0,255,0);tira.setPixelColor(Pantalla[ 78],0,255,0);
-tira.setPixelColor(Pantalla[ 91],0,255,0);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 86],0,255,0);tira.setPixelColor(Pantalla[ 84],0,255,0);tira.setPixelColor(Pantalla[ 81],0,255,0);
-tira.setPixelColor(Pantalla[ 100],0,255,0);tira.setPixelColor(Pantalla[ 102],0,255,0);tira.setPixelColor(Pantalla[ 105],0,255,0);tira.setPixelColor(Pantalla[ 107],0,255,0);tira.setPixelColor(Pantalla[ 110],0,255,0);
-tira.setPixelColor(Pantalla[ 126],0,255,0);tira.setPixelColor(Pantalla[ 125],0,255,0);tira.setPixelColor(Pantalla[ 124],0,255,0);tira.setPixelColor(Pantalla[ 123],0,255,0);tira.setPixelColor(Pantalla[ 121],0,255,0);tira.setPixelColor(Pantalla[ 118],0,255,0);tira.setPixelColor(Pantalla[ 116],0,255,0);tira.setPixelColor(Pantalla[ 113],0,255,0);
-tira.setPixelColor(Pantalla[ 129],0,255,0);tira.setPixelColor(Pantalla[ 134],0,255,0);tira.setPixelColor(Pantalla[ 137],0,255,0);tira.setPixelColor(Pantalla[ 139],0,255,0);tira.setPixelColor(Pantalla[ 142],0,255,0);
-tira.setPixelColor(Pantalla[ 158],0,255,0);tira.setPixelColor(Pantalla[ 153],0,255,0);tira.setPixelColor(Pantalla[ 150],0,255,0);tira.setPixelColor(Pantalla[ 148],0,255,0);tira.setPixelColor(Pantalla[ 145],0,255,0);
-tira.setPixelColor(Pantalla[ 161],0,255,0);tira.setPixelColor(Pantalla[ 166],0,255,0);tira.setPixelColor(Pantalla[ 169],0,255,0);tira.setPixelColor(Pantalla[ 171],0,255,0);tira.setPixelColor(Pantalla[ 174],0,255,0);
-tira.setPixelColor(Pantalla[ 190],0,255,0);tira.setPixelColor(Pantalla[ 189],0,255,0);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 187],0,255,0);tira.setPixelColor(Pantalla[ 185],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 182],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 178],0,255,0);tira.setPixelColor(Pantalla[ 177],0,255,0);
-
+void Matriz_200_Negativo()
+{
+  tira.setPixelColor(Pantalla[62], 0, 255, 0);
+  tira.setPixelColor(Pantalla[61], 0, 255, 0);
+  tira.setPixelColor(Pantalla[60], 0, 255, 0);
+  tira.setPixelColor(Pantalla[59], 0, 255, 0);
+  tira.setPixelColor(Pantalla[57], 0, 255, 0);
+  tira.setPixelColor(Pantalla[56], 0, 255, 0);
+  tira.setPixelColor(Pantalla[55], 0, 255, 0);
+  tira.setPixelColor(Pantalla[54], 0, 255, 0);
+  tira.setPixelColor(Pantalla[52], 0, 255, 0);
+  tira.setPixelColor(Pantalla[51], 0, 255, 0);
+  tira.setPixelColor(Pantalla[50], 0, 255, 0);
+  tira.setPixelColor(Pantalla[49], 0, 255, 0);
+  tira.setPixelColor(Pantalla[68], 0, 255, 0);
+  tira.setPixelColor(Pantalla[70], 0, 255, 0);
+  tira.setPixelColor(Pantalla[73], 0, 255, 0);
+  tira.setPixelColor(Pantalla[75], 0, 255, 0);
+  tira.setPixelColor(Pantalla[78], 0, 255, 0);
+  tira.setPixelColor(Pantalla[91], 0, 255, 0);
+  tira.setPixelColor(Pantalla[89], 0, 255, 0);
+  tira.setPixelColor(Pantalla[86], 0, 255, 0);
+  tira.setPixelColor(Pantalla[84], 0, 255, 0);
+  tira.setPixelColor(Pantalla[81], 0, 255, 0);
+  tira.setPixelColor(Pantalla[100], 0, 255, 0);
+  tira.setPixelColor(Pantalla[102], 0, 255, 0);
+  tira.setPixelColor(Pantalla[105], 0, 255, 0);
+  tira.setPixelColor(Pantalla[107], 0, 255, 0);
+  tira.setPixelColor(Pantalla[110], 0, 255, 0);
+  tira.setPixelColor(Pantalla[126], 0, 255, 0);
+  tira.setPixelColor(Pantalla[125], 0, 255, 0);
+  tira.setPixelColor(Pantalla[124], 0, 255, 0);
+  tira.setPixelColor(Pantalla[123], 0, 255, 0);
+  tira.setPixelColor(Pantalla[121], 0, 255, 0);
+  tira.setPixelColor(Pantalla[118], 0, 255, 0);
+  tira.setPixelColor(Pantalla[116], 0, 255, 0);
+  tira.setPixelColor(Pantalla[113], 0, 255, 0);
+  tira.setPixelColor(Pantalla[129], 0, 255, 0);
+  tira.setPixelColor(Pantalla[134], 0, 255, 0);
+  tira.setPixelColor(Pantalla[137], 0, 255, 0);
+  tira.setPixelColor(Pantalla[139], 0, 255, 0);
+  tira.setPixelColor(Pantalla[142], 0, 255, 0);
+  tira.setPixelColor(Pantalla[158], 0, 255, 0);
+  tira.setPixelColor(Pantalla[153], 0, 255, 0);
+  tira.setPixelColor(Pantalla[150], 0, 255, 0);
+  tira.setPixelColor(Pantalla[148], 0, 255, 0);
+  tira.setPixelColor(Pantalla[145], 0, 255, 0);
+  tira.setPixelColor(Pantalla[161], 0, 255, 0);
+  tira.setPixelColor(Pantalla[166], 0, 255, 0);
+  tira.setPixelColor(Pantalla[169], 0, 255, 0);
+  tira.setPixelColor(Pantalla[171], 0, 255, 0);
+  tira.setPixelColor(Pantalla[174], 0, 255, 0);
+  tira.setPixelColor(Pantalla[190], 0, 255, 0);
+  tira.setPixelColor(Pantalla[189], 0, 255, 0);
+  tira.setPixelColor(Pantalla[188], 0, 255, 0);
+  tira.setPixelColor(Pantalla[187], 0, 255, 0);
+  tira.setPixelColor(Pantalla[185], 0, 255, 0);
+  tira.setPixelColor(Pantalla[184], 0, 255, 0);
+  tira.setPixelColor(Pantalla[183], 0, 255, 0);
+  tira.setPixelColor(Pantalla[182], 0, 255, 0);
+  tira.setPixelColor(Pantalla[180], 0, 255, 0);
+  tira.setPixelColor(Pantalla[179], 0, 255, 0);
+  tira.setPixelColor(Pantalla[178], 0, 255, 0);
+  tira.setPixelColor(Pantalla[177], 0, 255, 0);
 }
 
-void Matriz_100_Negativo(){
-tira.setPixelColor(Pantalla[ 62],0,255,0);tira.setPixelColor(Pantalla[ 61],0,255,0);tira.setPixelColor(Pantalla[ 58],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 56],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 53],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);tira.setPixelColor(Pantalla[ 50],0,255,0);
-tira.setPixelColor(Pantalla[ 66],0,255,0);tira.setPixelColor(Pantalla[ 69],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);tira.setPixelColor(Pantalla[ 74],0,255,0);tira.setPixelColor(Pantalla[ 77],0,255,0);
-tira.setPixelColor(Pantalla[ 93],0,255,0);tira.setPixelColor(Pantalla[ 90],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);tira.setPixelColor(Pantalla[ 85],0,255,0);tira.setPixelColor(Pantalla[ 82],0,255,0);
-tira.setPixelColor(Pantalla[ 98],0,255,0);tira.setPixelColor(Pantalla[ 101],0,255,0);tira.setPixelColor(Pantalla[ 104],0,255,0);tira.setPixelColor(Pantalla[ 106],0,255,0);tira.setPixelColor(Pantalla[ 109],0,255,0);
-tira.setPixelColor(Pantalla[ 125],0,255,0);tira.setPixelColor(Pantalla[ 122],0,255,0);tira.setPixelColor(Pantalla[ 119],0,255,0);tira.setPixelColor(Pantalla[ 117],0,255,0);tira.setPixelColor(Pantalla[ 114],0,255,0);
-tira.setPixelColor(Pantalla[ 130],0,255,0);tira.setPixelColor(Pantalla[ 133],0,255,0);tira.setPixelColor(Pantalla[ 136],0,255,0);tira.setPixelColor(Pantalla[ 138],0,255,0);tira.setPixelColor(Pantalla[ 141],0,255,0);
-tira.setPixelColor(Pantalla[ 157],0,255,0);tira.setPixelColor(Pantalla[ 154],0,255,0);tira.setPixelColor(Pantalla[ 151],0,255,0);tira.setPixelColor(Pantalla[ 149],0,255,0);tira.setPixelColor(Pantalla[ 146],0,255,0);
-tira.setPixelColor(Pantalla[ 162],0,255,0);tira.setPixelColor(Pantalla[ 165],0,255,0);tira.setPixelColor(Pantalla[ 168],0,255,0);tira.setPixelColor(Pantalla[ 170],0,255,0);tira.setPixelColor(Pantalla[ 173],0,255,0);
-tira.setPixelColor(Pantalla[ 190],0,255,0);tira.setPixelColor(Pantalla[ 189],0,255,0);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 185],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 181],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 178],0,255,0);
-
+void Matriz_100_Negativo()
+{
+  tira.setPixelColor(Pantalla[62], 0, 255, 0);
+  tira.setPixelColor(Pantalla[61], 0, 255, 0);
+  tira.setPixelColor(Pantalla[58], 0, 255, 0);
+  tira.setPixelColor(Pantalla[57], 0, 255, 0);
+  tira.setPixelColor(Pantalla[56], 0, 255, 0);
+  tira.setPixelColor(Pantalla[55], 0, 255, 0);
+  tira.setPixelColor(Pantalla[53], 0, 255, 0);
+  tira.setPixelColor(Pantalla[52], 0, 255, 0);
+  tira.setPixelColor(Pantalla[51], 0, 255, 0);
+  tira.setPixelColor(Pantalla[50], 0, 255, 0);
+  tira.setPixelColor(Pantalla[66], 0, 255, 0);
+  tira.setPixelColor(Pantalla[69], 0, 255, 0);
+  tira.setPixelColor(Pantalla[72], 0, 255, 0);
+  tira.setPixelColor(Pantalla[74], 0, 255, 0);
+  tira.setPixelColor(Pantalla[77], 0, 255, 0);
+  tira.setPixelColor(Pantalla[93], 0, 255, 0);
+  tira.setPixelColor(Pantalla[90], 0, 255, 0);
+  tira.setPixelColor(Pantalla[87], 0, 255, 0);
+  tira.setPixelColor(Pantalla[85], 0, 255, 0);
+  tira.setPixelColor(Pantalla[82], 0, 255, 0);
+  tira.setPixelColor(Pantalla[98], 0, 255, 0);
+  tira.setPixelColor(Pantalla[101], 0, 255, 0);
+  tira.setPixelColor(Pantalla[104], 0, 255, 0);
+  tira.setPixelColor(Pantalla[106], 0, 255, 0);
+  tira.setPixelColor(Pantalla[109], 0, 255, 0);
+  tira.setPixelColor(Pantalla[125], 0, 255, 0);
+  tira.setPixelColor(Pantalla[122], 0, 255, 0);
+  tira.setPixelColor(Pantalla[119], 0, 255, 0);
+  tira.setPixelColor(Pantalla[117], 0, 255, 0);
+  tira.setPixelColor(Pantalla[114], 0, 255, 0);
+  tira.setPixelColor(Pantalla[130], 0, 255, 0);
+  tira.setPixelColor(Pantalla[133], 0, 255, 0);
+  tira.setPixelColor(Pantalla[136], 0, 255, 0);
+  tira.setPixelColor(Pantalla[138], 0, 255, 0);
+  tira.setPixelColor(Pantalla[141], 0, 255, 0);
+  tira.setPixelColor(Pantalla[157], 0, 255, 0);
+  tira.setPixelColor(Pantalla[154], 0, 255, 0);
+  tira.setPixelColor(Pantalla[151], 0, 255, 0);
+  tira.setPixelColor(Pantalla[149], 0, 255, 0);
+  tira.setPixelColor(Pantalla[146], 0, 255, 0);
+  tira.setPixelColor(Pantalla[162], 0, 255, 0);
+  tira.setPixelColor(Pantalla[165], 0, 255, 0);
+  tira.setPixelColor(Pantalla[168], 0, 255, 0);
+  tira.setPixelColor(Pantalla[170], 0, 255, 0);
+  tira.setPixelColor(Pantalla[173], 0, 255, 0);
+  tira.setPixelColor(Pantalla[190], 0, 255, 0);
+  tira.setPixelColor(Pantalla[189], 0, 255, 0);
+  tira.setPixelColor(Pantalla[188], 0, 255, 0);
+  tira.setPixelColor(Pantalla[186], 0, 255, 0);
+  tira.setPixelColor(Pantalla[185], 0, 255, 0);
+  tira.setPixelColor(Pantalla[184], 0, 255, 0);
+  tira.setPixelColor(Pantalla[183], 0, 255, 0);
+  tira.setPixelColor(Pantalla[181], 0, 255, 0);
+  tira.setPixelColor(Pantalla[180], 0, 255, 0);
+  tira.setPixelColor(Pantalla[179], 0, 255, 0);
+  tira.setPixelColor(Pantalla[178], 0, 255, 0);
 }
 
-void Matriz_75_Negativo(){
-tira.setPixelColor(Pantalla[ 62],0,255,0);tira.setPixelColor(Pantalla[ 61],0,255,0);tira.setPixelColor(Pantalla[ 60],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 58],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 54],0,255,0);tira.setPixelColor(Pantalla[ 53],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);
-tira.setPixelColor(Pantalla[ 69],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);
-tira.setPixelColor(Pantalla[ 90],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);
-tira.setPixelColor(Pantalla[ 101],0,255,0);tira.setPixelColor(Pantalla[ 104],0,255,0);
-tira.setPixelColor(Pantalla[ 122],0,255,0);tira.setPixelColor(Pantalla[ 119],0,255,0);tira.setPixelColor(Pantalla[ 118],0,255,0);tira.setPixelColor(Pantalla[ 117],0,255,0);tira.setPixelColor(Pantalla[ 116],0,255,0);tira.setPixelColor(Pantalla[ 115],0,255,0);
-tira.setPixelColor(Pantalla[ 133],0,255,0);tira.setPixelColor(Pantalla[ 140],0,255,0);
-tira.setPixelColor(Pantalla[ 154],0,255,0);tira.setPixelColor(Pantalla[ 147],0,255,0);
-tira.setPixelColor(Pantalla[ 165],0,255,0);tira.setPixelColor(Pantalla[ 172],0,255,0);
-tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 182],0,255,0);tira.setPixelColor(Pantalla[ 181],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);
-
+void Matriz_75_Negativo()
+{
+  tira.setPixelColor(Pantalla[62], 0, 255, 0);
+  tira.setPixelColor(Pantalla[61], 0, 255, 0);
+  tira.setPixelColor(Pantalla[60], 0, 255, 0);
+  tira.setPixelColor(Pantalla[59], 0, 255, 0);
+  tira.setPixelColor(Pantalla[58], 0, 255, 0);
+  tira.setPixelColor(Pantalla[55], 0, 255, 0);
+  tira.setPixelColor(Pantalla[54], 0, 255, 0);
+  tira.setPixelColor(Pantalla[53], 0, 255, 0);
+  tira.setPixelColor(Pantalla[52], 0, 255, 0);
+  tira.setPixelColor(Pantalla[51], 0, 255, 0);
+  tira.setPixelColor(Pantalla[69], 0, 255, 0);
+  tira.setPixelColor(Pantalla[72], 0, 255, 0);
+  tira.setPixelColor(Pantalla[90], 0, 255, 0);
+  tira.setPixelColor(Pantalla[87], 0, 255, 0);
+  tira.setPixelColor(Pantalla[101], 0, 255, 0);
+  tira.setPixelColor(Pantalla[104], 0, 255, 0);
+  tira.setPixelColor(Pantalla[122], 0, 255, 0);
+  tira.setPixelColor(Pantalla[119], 0, 255, 0);
+  tira.setPixelColor(Pantalla[118], 0, 255, 0);
+  tira.setPixelColor(Pantalla[117], 0, 255, 0);
+  tira.setPixelColor(Pantalla[116], 0, 255, 0);
+  tira.setPixelColor(Pantalla[115], 0, 255, 0);
+  tira.setPixelColor(Pantalla[133], 0, 255, 0);
+  tira.setPixelColor(Pantalla[140], 0, 255, 0);
+  tira.setPixelColor(Pantalla[154], 0, 255, 0);
+  tira.setPixelColor(Pantalla[147], 0, 255, 0);
+  tira.setPixelColor(Pantalla[165], 0, 255, 0);
+  tira.setPixelColor(Pantalla[172], 0, 255, 0);
+  tira.setPixelColor(Pantalla[186], 0, 255, 0);
+  tira.setPixelColor(Pantalla[183], 0, 255, 0);
+  tira.setPixelColor(Pantalla[182], 0, 255, 0);
+  tira.setPixelColor(Pantalla[181], 0, 255, 0);
+  tira.setPixelColor(Pantalla[180], 0, 255, 0);
+  tira.setPixelColor(Pantalla[179], 0, 255, 0);
 }
-
-
 
 void Matriz_Aro_1()
 {
@@ -7896,8 +8614,6 @@ void Matriz_Pinguino()
   }
 }
 
-
-
 void Matriz_Corazon_400()
 {
   if (lado == IZQUIERDA)
@@ -8478,35 +9194,26 @@ void Matriz_Corazon_200()
 
 void Matriz_500()
 {
-  
 }
 void Matriz_400()
 {
- 
 }
 void Matriz_300()
 {
-  
 }
 void Matriz_200()
 {
-
-  
 }
 
 void Matriz_500_Negativo()
 {
-
- 
 }
 
 void Matriz_400_Negativo()
 {
- 
 }
 void Matriz_300_Negativo()
 {
-
 }
 
 void Matriz_Ok()
