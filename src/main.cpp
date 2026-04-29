@@ -413,11 +413,11 @@ ulong frecuencia_apunta_tiro_publico = 0;
 
 // los datos de las frecuencias se multiplican por 10 para obtener la frecuencia central
 int frecuencia_apunta_neutro = 500;
-int frecuencia_apunta_tiro_verde = 1500;
-int frecuencia_disparo_tiro_verde = 2500;
-int frecuencia_apunta_tiro_azul = 3500;
-int frecuencia_disparo_tiro_azul = 4500;
-int ajuste_frecuencia = 1;
+int frecuencia_apunta_tiro_verde = 1200;
+int frecuencia_disparo_tiro_verde = 2200;
+int frecuencia_apunta_tiro_azul = 3200;
+int frecuencia_disparo_tiro_azul = 4200;
+int ajuste_frecuencia = 200;
 
 #define SIN_DETECCION 0
 #define DISPARO_VERDE 1
@@ -1347,7 +1347,7 @@ void calcula_frecuencia()
 uint8_t Calcula__Valor_Del_Laser()
 {
   uint8_t resultado = SIN_DETECCION;
-  // Verde apunta 1.5K
+  // Verde apunta 1.2K
   if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + ajuste_frecuencia)))
   {
     resultado = APUNTA_VERDE;
@@ -1355,7 +1355,7 @@ uint8_t Calcula__Valor_Del_Laser()
     Serial.println();
     Serial.print("Apunta-Verde");
   }
-  // Verde disparo 2.5K
+  // Verde disparo 2.2K
   if ((nueva_frecuencia > (frecuencia_disparo_tiro_verde - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_disparo_tiro_verde + ajuste_frecuencia)))
   {
     resultado = DISPARO_VERDE;
@@ -1363,14 +1363,14 @@ uint8_t Calcula__Valor_Del_Laser()
     Serial.println();
     Serial.print("Disparo-Verde");
   }
-  // Azul apunta 3.5K
+  // Azul apunta 3.2K
   if ((nueva_frecuencia > (frecuencia_apunta_tiro_azul - ajuste_frecuencia)) && (nueva_frecuencia < (frecuencia_apunta_tiro_azul + ajuste_frecuencia)))
   {
     resultado = APUNTA_AZUL;
     color_de_disparo = BLUE;
     Serial.print("Apunta-Azul");
   }
-  // Azul disparo 4.5K
+  // Azul disparo 4.2K
   if (nueva_frecuencia > (frecuencia_disparo_tiro_azul - ajuste_frecuencia) && (nueva_frecuencia < (frecuencia_disparo_tiro_azul + ajuste_frecuencia)))
   {
     resultado = DISPARO_AZUL;
