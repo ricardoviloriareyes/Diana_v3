@@ -135,6 +135,7 @@ int relon_100mseg = ENCENDIDO;
 int actualiza_display_1seg = SI;
 int actualiza_display_500mseg = SI;
 int actualiza_display_200mseg = SI;
+int actualiza_display_150mseg = SI;
 int actualiza_display_100mseg = SI;
 int actualiza_display_10mseg=SI;
 uint8_t salir_por_timeout = NO;
@@ -521,6 +522,9 @@ volatile unsigned long tiempo_actual_reloj_500mseg = 0;
 volatile unsigned long tiempo_inicial_reloj_200mseg = millis();
 volatile unsigned long tiempo_actual_reloj_200mseg = 0;
 
+volatile unsigned long tiempo_inicial_reloj_150mseg = millis();
+volatile unsigned long tiempo_actual_reloj_150mseg = 0;
+
 volatile unsigned long tiempo_inicial_reloj_100mseg = millis();
 volatile unsigned long tiempo_actual_reloj_100mseg = 0;
 
@@ -548,6 +552,7 @@ void Dibuja_Valor_Del_Laser(int local_valor_laser);
 int reloj_1seg();
 int creloj_500mseg();
 int reloj_200mseg();
+int reloj_150mseg();
 int creloj_100mseg();
 int creloj_10mseg();
 
@@ -796,10 +801,10 @@ void setup()
 /* ------------------------inicio loop ----------------------------*/
 void loop()
 {
-  encender_monitor_de__frecuencia = SI;      // Prueba, se habilita al arrancar la solicitud del monitor, linea se comenta
+  encender_monitor_de__frecuencia=SI;
   if (encender_monitor_de__frecuencia == SI) // se habilita cuando se reciben datos, se deshabilita cuando se detecta disparo para evitar conflicto mientras se manda resultado
   {
-    // Serial.print("CF ");
+    //Serial.print("CF ");
     Calcula_Frecuencia_Estadistica();
   }
   switch (case_estado_diana)
@@ -951,24 +956,19 @@ void Analiza_Posicion_En_Encendido()
   switch (case_posicion_del_proceso)
   {
   case INICIA_STANDBYE:
-    Serial.print("INICIA_STANDBYE");
+    Serial.println("INICIA_STANDBYE");
     case_posicion_del_proceso = INICIALIZA_TIEMPO;
     break;
 
   case INICIALIZA_TIEMPO:
-    Serial.print("INICIALIZA_TIEMPO");
+    Serial.println("INICIALIZA_TIEMPO");
     // incia tiempo inicial del tiro
     tiempo_inicia_tiro = millis();
     tira.clear();
     case_posicion_del_proceso = MONITOREA_DISPARO;
     break;
   case MONITOREA_DISPARO:
-    // Ponderacion_Y_Obtencion_De_Frecuencia2();
-    if (encender_monitor_de__frecuencia == SI) // se habilita cuando se reciben datos, se deshabilita cuando se detecta disparo para evitar conflicto mientras se manda resultado
-    {
-      // Serial.print("CF ");
-      Calcula_Frecuencia_Estadistica();
-    }
+    Serial.println("Monitorea");
     if ((evalua_frecuencia == SI) || (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)) // solo se presenta cada 20 muestras o 200 mseg
     {
       case_valor_del_laser = Calcula__Valor_Del_Laser(); // cuando calcula modifica
@@ -1079,7 +1079,9 @@ void Actualiza_Relojes()
   tiempo_actual_reloj_1seg = millis();
   tiempo_actual_reloj_500mseg = millis();
   tiempo_actual_reloj_200mseg = millis();
+  tiempo_actual_reloj_150mseg =millis();
   tiempo_actual_reloj_100mseg = millis();
+  tiempo_actual_reloj_10mseg=millis();
 }
 
 /*-----------------------------------------------*/
@@ -1348,7 +1350,7 @@ void Calcula_Frecuencia_Estadistica()
     muestra[casilla_muestra] = pulsos;
     pulsos = 0;
     casilla_muestra++;
-    if (casilla_muestra == 15) // se paso a la 20 por orden anterior,se regresa al origen
+    if (casilla_muestra == 20) // se paso a la 20 por orden anterior,se regresa al origen
     {
       casilla_muestra = 0; // regresa a casilla[0]
       if (Porcentaje_De_Desviacion_Frecuencia() <= tolerancia_desviacion_std)
@@ -1360,7 +1362,7 @@ void Calcula_Frecuencia_Estadistica()
       else  //solo valores arriba de 1khz que desviacion en mayor a 35%
       {
         evalua_frecuencia = NO;
-        Serial.print("NO valida = ");
+        // Serial.print("NO valida = ");
         // Serial.print("Media Estadistica ="+String(media_estadistica_obtenida)+"  D: ");
         // Serial.println(global_porcentaje_desviacion);
 
@@ -1380,29 +1382,29 @@ float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza,
   volatile unsigned long local_resta_muestra[20] =            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   volatile unsigned long local_cuadrados_resta_muestra[20] =  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   // Obtiene Media
-  for (i = 0; i <= 14; i++)
+  for (i = 0; i <= 19; i++)
   {
     local_media_muestral = local_media_muestral + muestra[i];
   }
-  local_media_muestral = local_media_muestral / 15; // son # casillas de muestreo
+  local_media_muestral = local_media_muestral / 19; // son # casillas de muestreo
 
   // Resta Media de casillas
-  for (i = 0; i <= 14; i++)
+  for (i = 0; i <= 19; i++)
   {
     local_resta_muestra[i] = muestra[i] - int(local_media_muestral);
   }
   // Obtiene Cuadrados de casillas de resta para quitar los negativos
-  for (i = 0; i <= 14; i++)
+  for (i = 0; i <= 19; i++)
   {
     local_cuadrados_resta_muestra[i] = local_resta_muestra[i] * local_resta_muestra[i];
   }
   // Suma Cuadrados
-  for (i = 0; i <= 14; i++)
+  for (i = 0; i <= 19; i++)
   {
     local_suma_cuadrados = local_suma_cuadrados + local_cuadrados_resta_muestra[i];
   }
   // Varianza Muestral (n-1) n=20 periodos
-  local_varianza_muestral = local_suma_cuadrados / 13; 
+  local_varianza_muestral = local_suma_cuadrados / 19; 
   
   // Desviacion estandar
   local_distribucion_estandar=sqrt(local_varianza_muestral);
@@ -1419,6 +1421,8 @@ float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza,
     { // Se quita la basura y se deja limpia la señal con frecuencia=0
       local_porcentaje_desviacion = 0; // para hacer valida la lectura
       media_estadistica_obtenida = 0;  // para dar un valor 0 en el ruido
+      Serial.print("*");
+      Serial.println(int(local_media_muestral));
     }
   return local_porcentaje_desviacion;
 }
@@ -1503,7 +1507,7 @@ int creloj_500mseg() // CD001
 int reloj_200mseg() // CD001
 {
   tiempo_actual_reloj_200mseg = millis();
-  if ((tiempo_inicial_reloj_200mseg + 150) < tiempo_actual_reloj_200mseg)
+  if ((tiempo_inicial_reloj_200mseg + 200) < tiempo_actual_reloj_200mseg)
   {
     tiempo_inicial_reloj_200mseg = millis();
     actualiza_display_200mseg = SI;
@@ -1514,6 +1518,21 @@ int reloj_200mseg() // CD001
     actualiza_display_200mseg = NO;
     return SIN_CAMBIO_ESTADO_RELOJ;
   }
+}
+
+int reloj_150mseg(){
+  tiempo_actual_reloj_150mseg = millis();
+  if ((tiempo_inicial_reloj_150mseg + 150) < tiempo_actual_reloj_150mseg)
+  {
+    tiempo_inicial_reloj_150mseg = millis();
+    actualiza_display_150mseg = SI;
+    return DETECTA_CAMBIO_ESTADO_RELOJ;
+  }
+  else
+  {
+    actualiza_display_150mseg = NO;
+    return SIN_CAMBIO_ESTADO_RELOJ;
+  } 
 }
 
 int creloj_100mseg() // CD001
