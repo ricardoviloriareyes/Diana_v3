@@ -1348,7 +1348,7 @@ void Calcula_Frecuencia_Estadistica()
     muestra[casilla_muestra] = pulsos;
     pulsos = 0;
     casilla_muestra++;
-    if (casilla_muestra == 20) // se paso a la 20 por orden anterior,se regresa al origen
+    if (casilla_muestra == 15) // se paso a la 20 por orden anterior,se regresa al origen
     {
       casilla_muestra = 0; // regresa a casilla[0]
       if (Porcentaje_De_Desviacion_Frecuencia() <= tolerancia_desviacion_std)
@@ -1380,35 +1380,35 @@ float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza,
   volatile unsigned long local_resta_muestra[20] =            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   volatile unsigned long local_cuadrados_resta_muestra[20] =  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   // Obtiene Media
-  for (i = 0; i <= 19; i++)
+  for (i = 0; i <= 14; i++)
   {
     local_media_muestral = local_media_muestral + muestra[i];
   }
-  local_media_muestral = local_media_muestral / 20; // son 20 casillas de muestreo
+  local_media_muestral = local_media_muestral / 15; // son # casillas de muestreo
 
   // Resta Media de casillas
-  for (i = 0; i <= 19; i++)
+  for (i = 0; i <= 14; i++)
   {
     local_resta_muestra[i] = muestra[i] - int(local_media_muestral);
   }
   // Obtiene Cuadrados de casillas de resta para quitar los negativos
-  for (i = 0; i <= 19; i++)
+  for (i = 0; i <= 14; i++)
   {
     local_cuadrados_resta_muestra[i] = local_resta_muestra[i] * local_resta_muestra[i];
   }
   // Suma Cuadrados
-  for (i = 0; i <= 19; i++)
+  for (i = 0; i <= 14; i++)
   {
     local_suma_cuadrados = local_suma_cuadrados + local_cuadrados_resta_muestra[i];
   }
   // Varianza Muestral (n-1) n=20 periodos
-  local_varianza_muestral = local_suma_cuadrados / 19; 
+  local_varianza_muestral = local_suma_cuadrados / 13; 
   
   // Desviacion estandar
   local_distribucion_estandar=sqrt(local_varianza_muestral);
 
   // Calculo de la desviacion vs la media de la muestra
-  if (local_media_muestral > 10) // evalua si son validos los datos arriba de 1khz
+  if (local_media_muestral >= 10) // evalua si son validos los datos arriba de 1khz
     { 
       // para no dividir entre 0
       local_porcentaje_desviacion = local_distribucion_estandar / local_media_muestral;
