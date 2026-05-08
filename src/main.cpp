@@ -584,6 +584,7 @@ uint8_t propietario_alternativo_color = 0;
 // declaracion de funciones
 void Analiza_Muestras();
 void Captura_20_muestras();
+void Evalua_Tirador_Correcto();
 
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len);
 void Test_Conexion_Diana();
@@ -602,20 +603,17 @@ int creloj_10mseg();
 
 int8_t detecto_laser = NO;
 int8_t activa_captura_de_muestras = NO;
-void Calcular_Datos_Del_Tiro_Y_Tirador();
+void Calcular_Datos_Del_Tiro();
 
 // publicidad
 void Muestra_Figura_Publicidad(int local_figura_publicidad);
 void Ejecuta_Publicidad();
 void Matriz_Ilumina_Mira_Aleatorio();
 void Matriz_Ilumina_Mira_Color_Jugador_Apuntado();
+void Matriz_Ilumina_Mira_Color_Jugador_Apuntado2();
 
 //nueva estructura
-void Analiza_Y_Dibuja_Figura();
-void Dibuja_Apunta_Verde();
-void Dibuja_Disparo_Verde();
-void Dibuja_Apunta_Azul();
-void Dibuja_Disparo_Azul();
+
 void Reinicializa_Variables_Antes_De_Apagar();
 
 // figuras
@@ -652,7 +650,6 @@ void Analiza_Posicion_En_Encendido();
 void Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color);
 void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_color);
 void Actualiza_Relojes();
-uint8_t Calcula__Valor_Del_Laser();
 void Switchea_Izquierda_Por_Derecha();
 uint8_t Evalua_y_Dibuja_Figura();
 void Aro_Sin_Deteccion();
@@ -677,6 +674,26 @@ void No_Wifi();
 void Espera(int local_millisegundos_de_espera);
 
 // figuras de valores del tiro
+
+
+void Valor_50();
+void Valor_40();
+void Valor_45();
+void Valor_75();
+void Valor_35();
+void Valor_30();
+void Valor_300();
+void Valor_200();
+void Valor_150();
+void Valor_100();
+void Valor_00();
+void Valor_Menos_200();
+void Valor_Menos_100();
+void Valor_Menos_70();
+
+
+
+
 void Aro_Disparo_Secuencia();
 void Valor_De_Tiro(uint8_t local_valor_de_disparo);
 void Matriz_Green();
@@ -723,6 +740,11 @@ void Matriz_Aro_7_Disparo();
 // Auxiliares
 void Despliega_datos_recibidos(); // auxiliar para estado de datos_recibidos
 void Despliega_datos_enviados();
+// Contadores
+
+int i;
+int casilla_muestra=0;
+float tolerancia_desviacion_std=0.35;
 
 /* -------------------- RECEPCION DE DATOS -----------------------*/
 // Callback when data is received
@@ -771,10 +793,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
   }
 }
 
-// Contadores
-int i;
-int casilla_muestra=0;
-float tolerancia_desviacion_std=0.35;
+
 
 /*-----------------------------------------------------------------------------*/
 // Contador para AttachInterrupt para proceso de identificacion de freceuncia recibida por laser
@@ -1171,27 +1190,11 @@ void Analiza_Muestras() // Calculos de la media, varianza, desviacion estandar
   }
 }
 
-void Analiza_Y_Dibuja_Figura(){
-  //sin importar el tiro analiza que digura se muestra y los valores que la acompanan
 
-}
-void Dibuja_Apunta_Verde(){
 
-}
 
-void Dibuja_Disparo_Verde(){
 
-}
 
-void Dibuja_Apunta_Azul(){
-
-}
-
-void Dibuja_Disparo_Azul(){
- // calcula el color del tirador correcto
- // presenta el valor del tiro
-
-}
 
 
 
@@ -1375,7 +1378,7 @@ void Analiza_Posicion_En_Encendido()
 
     if ((evalua_frecuencia == SI) || (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)) // solo se presenta cada 20 muestras o 200 mseg
     {
-      case_valor_del_laser = Calcula__Valor_Del_Laser(); // cuando calcula modifica
+      // case_valor_del_laser = Calcula__Valor_Del_Laser(); // cuando calcula modifica
       Dibuja_Valor_Del_Laser(case_valor_del_laser);
       if ((case_valor_del_laser == DISPARO_VERDE) || (case_valor_del_laser == DISPARO_AZUL) || (salir_por_timeout == SI))
       {
@@ -1747,218 +1750,8 @@ void Despliega_datos_recibidos()
 }
 
 
-<<<<<<< HEAD
-=======
-void Calcula_Frecuencia_Estadistica()
-{
-  if (creloj_10mseg()==DETECTA_CAMBIO_ESTADO_RELOJ)
-  { 
-    muestra[casilla_muestra] = pulsos;
-    pulsos = 0;
-    casilla_muestra++;
-    if (casilla_muestra == 20) // se paso a la 20 por orden anterior,se regresa al origen
-    {
-      casilla_muestra = 0; // regresa a casilla[0]
-      if (Porcentaje_De_Desviacion_Frecuencia() <= tolerancia_desviacion_std)
-      { // datos mayores a 1Khz y desviacion menor a 35% respectoa la media
-        evalua_frecuencia = SI;
-        nueva_frecuencia = media_estadistica_obtenida;
-        Serial.println(nueva_frecuencia);
-      }
-      else  //solo valores arriba de 1khz que desviacion en mayor a 35%
-      {
-        evalua_frecuencia = SI;
-        // Serial.print("NO valida = ");
-        // Serial.print("Media Estadistica ="+String(media_estadistica_obtenida)+"  D: ");
-        // Serial.println(global_porcentaje_desviacion);
-
-        // nueva_frecuencia= se mantiene la anterior
-      }
-    }
-  }
-}
-
-float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza, desviacion estandar
-{
-  float local_media_muestral = 0;
-  float local_suma_cuadrados = 0;
-  float local_varianza_muestral = 0;
-  float local_distribucion_estandar=1;
-  float local_porcentaje_desviacion=1;
-  volatile unsigned long local_resta_muestra[20] =            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  volatile unsigned long local_cuadrados_resta_muestra[20] =  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  // Obtiene Media
-  for (i = 0; i <= 19; i++)
-  {
-    local_media_muestral = local_media_muestral + muestra[i];
-  }
-  local_media_muestral = local_media_muestral / 19; // son # casillas de muestreo
-
-  // Resta Media de casillas
-  for (i = 0; i <= 19; i++)
-  {
-    local_resta_muestra[i] = muestra[i] - int(local_media_muestral);
-  }
-  // Obtiene Cuadrados de casillas de resta para quitar los negativos
-  for (i = 0; i <= 19; i++)
-  {
-    local_cuadrados_resta_muestra[i] = local_resta_muestra[i] * local_resta_muestra[i];
-  }
-  // Suma Cuadrados
-  for (i = 0; i <= 19; i++)
-  {
-    local_suma_cuadrados = local_suma_cuadrados + local_cuadrados_resta_muestra[i];
-  }
-  // Varianza Muestral (n-1) n=20 periodos
-  local_varianza_muestral = local_suma_cuadrados / 19; 
-  
-  // Desviacion estandar
-  local_distribucion_estandar=sqrt(local_varianza_muestral);
-
-  // Calculo de la desviacion vs la media de la muestra
-  if (local_media_muestral >= 10) // evalua si son validos los datos arriba de 1khz
-    { 
-      // para no dividir entre 0
-      local_porcentaje_desviacion = local_distribucion_estandar / local_media_muestral;
-      media_estadistica_obtenida = int(local_media_muestral);
-      global_porcentaje_desviacion=local_porcentaje_desviacion;
-    }
-  else // todos los datos de abajo de 1 khz lo manda a 0
-    { // Se quita la basura y se deja limpia la señal con frecuencia=0
-      local_porcentaje_desviacion = 0; // para hacer valida la lectura
-      media_estadistica_obtenida = 0;  // para dar un valor 0 en el ruido
-      // Serial.print("*");
-      // Serial.println(int(local_media_muestral));
-    }
-  return local_porcentaje_desviacion;
-}
->>>>>>> 26c2f47dbaae403be1bd41c1f72756a378152252
 
 
-
-
-/* ----------------------------------------------------- */
-uint8_t Calcula__Valor_Del_Laser()
-{
-  //Sin deteccion valor menor a 900 Hrz
-<<<<<<< HEAD
-  uint8_t resultado = NO_DETECTADO; // en caso que sea cualquier otra frecuencia regresa el valor NO_DETECTADO
-
-  // Verde apunta 1.2K
-  if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - ajuste_frecuencia_abajo)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + ajuste_frecuencia_arriba)))
-=======
-  uint8_t resultado = SIN_DETECCION; // en caso que sea cualquier otra frecuencia regresa el valor SIN_DETECCION
-  // Verde apunta 10,11 (es el No de pulsos en 10 mseg = 1Khz o 1.1Khz)
-  switch (nueva_frecuencia)
->>>>>>> 26c2f47dbaae403be1bd41c1f72756a378152252
-  {
-  case 10:
-    resultado = APUNTA_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Apunta-Verde");
-    break;
-  case 11:
-    resultado = APUNTA_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Apunta-Verde");
-    break;
-  case 14:
-    resultado = DISPARO_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Disparo-Verde");
-    break;
-  case 15:
-    resultado = DISPARO_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Disparo-Verde");
-    break;
-  case 16:
-    resultado = DISPARO_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Disparo-Verde");
-    break;
-  case 17:
-    resultado = DISPARO_VERDE;
-    color_de_disparo = GREEN;
-    Serial.println();
-    Serial.print("Disparo-Verde");
-    break;
-  case 21:
-    resultado = APUNTA_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Apunta-Azul");  
-    break;
-  case 22:
-     resultado = APUNTA_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Apunta-Azul");  
-    break;
-  case 23:
-    resultado = APUNTA_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Apunta-Azul");  
-    break;
-  case 24:
-      resultado = APUNTA_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Apunta-Azul");  
-    break;
-  case 33:
-    resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break;  
-  case 34:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 35:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 36:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 37:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 38:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 39:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 40:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break; 
-  case 41:
-      resultado = DISPARO_AZUL;
-    color_de_disparo = BLUE;
-    Serial.print("Disparo-Azul");
-    break;  
-  default:
-    resultado=SIN_DETECCION;
-    break;
-  }
-  return resultado;
-}
 
 /*--------------------------------------------------------*/
 
@@ -2092,6 +1885,7 @@ void Asigna_Pixeles_Para_Definir_Color_Original(uint8_t local_color)
     break;
   }
 }
+
 
 void Asigna_Frecuencias_Base_Para_Tiro(uint8_t local_color)
 {
@@ -6245,7 +6039,8 @@ tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPix
 
 }
 
-void Valor_200(){
+void Valor_200()
+{
   tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
 tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
 tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
