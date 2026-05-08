@@ -1,6 +1,13 @@
-// DIANA_V3
+// DIANA_V4
 /*
 BITACORA
+VERSION 4
+6MAYO 2026
+Se tiene problema con los intervalos de lectura de la frecuencia
+Se cambia estructura de lectura paralela con procesamiento lineal lectura y luego procesamiento
+
+
+CAMBIOS EN LA VERSION 3
 30 Abril 2026
 Se cambia la rutina de leer freceuncia y se reemplaza por un lectura de la media y desviacion estandar
 Si la desviacion estandar representa menos del 30% se considera una lectura aceptable
@@ -20,8 +27,6 @@ al blanco y como cambia al color de su pistola para que ejecute el tiro
 Se modifica que al no recibir ningun habilitacion del monitor por mas de 1 minuto, empiece a mostrar
 los diferentes blancos con el objetivo de hacer publicidad al juego e invitar a los parroquianos a jugar
 se realiza con la opcion     Ejecuta_Publicidad();
-
-
 
 18 DE AGOSTO DE 2025
 Se instala en otra maquina y se configura, ya no manda errores
@@ -66,12 +71,14 @@ uint8_t broadcastAddressMonitor[] = {0x4C, 0xEB, 0xD6, 0x75, 0x48, 0x30};
 
 #define NO 0
 #define SI 1
+#define RECHAZADO 0
+#define VALIDO 1
 
 // Colores del disparo
 #define COLOR_SIN_ASIGNAR 0
-#define RED 1
-#define GREEN 2
-#define BLUE 3
+#define GREEN 1
+#define BLUE 2
+#define RED 3
 #define ARCOIRIS 4
 uint8_t color_de_disparo = COLOR_SIN_ASIGNAR;
 
@@ -151,6 +158,8 @@ uint16_t tiempo_espera_salida = 500; // milisegundos
 #define PRIVADO 0
 #define PUBLICO 1
 
+
+
 // estructura de envio de datos al compañero(peer)
 typedef struct structura_mensaje
 {
@@ -164,14 +173,14 @@ typedef struct structura_mensaje
   // Propiedades del Paquete
   uint8_t t; // test
   uint8_t d; // diana
-  uint8_t c; // color
+  uint8_t c; // color GREEN,BLUE,RED,
   uint8_t p; // No. de jugador
 
   // propiedades del tiro
   uint8_t s; // numero asignado de tiro, sirve para las figuras numeros CD001
 
   // Condiciones de manejo del tiro
-  uint8_t pp; // tiro privado (solo jugador original ) o publico (cualquiera de los dos)
+  uint8_t pp; // "0" privado (solo jugador original ) o "1" publico (cualquiera de los dos)
   uint8_t pa; // No. de jugador alternativo en caso de ser tiro publico
 
   // propiedades de figura
@@ -190,9 +199,39 @@ typedef struct structura_mensaje
 /* fin de importacion*/
 
 structura_mensaje datos_enviados;
-structura_mensaje
-    datos_recibidos;
+structura_mensaje datos_recibidos;
+
+
+
+typedef struct estructura_datos_tiro
+{
+  //Analiza_Muestras();
+  int resultado_de_analisis; //VALIDO, RECHAZADO
+  int media_obtenida;
+  float porcentaje_desviacion; //0.00 ->sin limite
+  //Calcular_Datos_Del_Tiro()
+  int valor_del_tiro;   // NO_DETECTADO, APUNTA_VERDE,APUNTA AZUL, DISPARO_VERDE,DISPARO_AZUL,REPETIR_ANALISIS_DE_FRECUENCIA. EN_PROCESO_DE_ENVIO
+  int color_del_tiro;   //COLOR_SIN_ASIGNAR, GREEN, BLUE
+  int color_del_tirador; //COLOR_SIN_ASIGNAR, GREEN, BLUE 
+  //Evalua_Tirador_Correcto()
+  int tirador_correcto;  //SI,NO
+ // analisis de figura 
+  uint8_t tipo_de_figura; // NORMAL, BONO, CATIGO, CALIBRA, TEST
+  uint8_t resultado_figura; //OSO, RANA, BOTELLA, CORAZON ... ETC
+  int valor_figura; //-1000 ... +1000
+} estructura_datos_tiro;
+
+estructura_datos_tiro datos_del_tiro;
+
+
+
+
+
+
 // structura_mensaje datos_locales_diana;  // para usar en diana
+
+
+
 
 #define TEST 0
 #define TIRO_ACTIVO 1
@@ -212,30 +251,16 @@ structura_mensaje
 #define TIPO_BONO 2
 #define TIPO_CASTIGO 3
 #define TIPO_CALIBRA 4
-
 uint8_t tipo_de_figura = TIPO_NORMAL;
 
 // valores para tipos de figuras a enviar
 
-// Castigo el valor inicial se genera en monitor y se recibe
-//  debe ser el mismo en monitor
-#define CASTIGO_UNICORNIO 16
-#define CASTIGO_BOTELLA 15
-#define CASTIGO_COPA 14
+
 
 // Normal el valor inicial se genera en diana
 // el valor se genera de forma local, debe ser diferente a castigo y bonos
 //  se genera aqui y el monitor recibe, debe ser el mismo para mostrar la misma
-//  figura en el monitor
-#define NORMAL_SIN_IMPACTO 13
-#define NORMAL_CONEJO 12
-#define NORMAL_OSO 11
-#define NORMAL_ZORRA 10
-#define NORMAL_MARIPOSA 9
-#define NORMAL_PINGUINO 8
-#define NORMAL_ARANA 7
-#define NORMAL_LAGARTIJA 6
-#define NORMAL_RANA 5
+
 
 // Bono el valor inicial se genera en monitor y se recibe
 // debe ser el mismo en monitor
@@ -244,6 +269,25 @@ uint8_t tipo_de_figura = TIPO_NORMAL;
 #define BONO_RANA 2
 #define BONO_CORAZON_200 1 // el bono corazon 100 se genera de forma local y se envia a monitor
 
+//  figura en el monitor
+#define NORMAL_SIN_IMPACTO 13
+
+#define NORMAL_OSO        11
+#define NORMAL_ZORRA      10
+#define NORMAL_MARIPOSA   9
+#define NORMAL_PINGUINO   8
+#define NORMAL_ARANA      7
+#define NORMAL_LAGARTIJA  6
+#define NORMAL_RANA       5
+
+// Castigo el valor inicial se genera en monitor y se recibe
+//  debe ser el mismo en monitor
+#define CASTIGO_UNICORNIO 16
+#define CASTIGO_BOTELLA 15
+#define CASTIGO_COPA 14
+
+
+
 #define FIGURA_SIN_DEFINIR 0
 
 #define PUNTOS_FIGURA_SIN_DEFINIR 0
@@ -251,7 +295,7 @@ uint8_t tipo_de_figura = TIPO_NORMAL;
 #define PUNTOS_NORMAL_OSO 50
 #define PUNTOS_NORMAL_ZORRA 40
 #define PUNTOS_NORMAL_MARIPOSA 45
-#define PUNTOS_BONO_PIGUINO 75
+#define PUNTOS_NORMAL_PIGUINO 75
 #define PUNTOS_NORMAL_ARANA 35
 #define PUNTOS_NORMAL_LAGARTIJA 30
 #define PUNTOS_NORMAL_RANA 50
@@ -260,8 +304,6 @@ uint8_t tipo_de_figura = TIPO_NORMAL;
 #define PUNTOS_BONO_PINGUINO 200
 #define PUNTOS_BONO_RANA 150
 #define PUNTOS_BONO_CORAZON_200 100
-#define PUNTOS_NORMAL_CONEJO 30
-#define PUNTOS_NORMAL_PERRA 20
 #define PUNTOS_CALIBRA_0 0
 // Castigo
 #define PUNTOS_CASTIGO_UNICORNIO -200
@@ -282,7 +324,7 @@ uint8_t contador_vueltas = 1;
 
 uint8_t tipo_tiro_recibido = TIRO_ACTIVO;
 uint16_t no_paquete_test = 2000;
-int16_t valor_puntuacion_figura = 0;
+int valor_puntuacion_figura = 0;
 // se usa para identificar la figura y mostrar el valor del tiro, se quito de "Evalua_Figura_NOrmal()"
 uint8_t resultado_figura = FIGURA_SIN_DEFINIR;
 
@@ -445,14 +487,16 @@ int frecuencia_disparo_tiro_azul = 42;
 int ajuste_frecuencia_arriba = 3; // es el ajuste hacia arriba y hacia abajo del valor generado de la media
 int ajuste_frecuencia_abajo=1;
 
-#define SIN_DETECCION 0
-#define DISPARO_VERDE 1
-#define APUNTA_VERDE 2
-#define APUNTA_ANONIMO 3
-#define APUNTA_AZUL 4
-#define DISPARO_AZUL 5
+#define NO_DETECTADO 0
+#define APUNTA_VERDE 1
+#define DISPARO_VERDE 2
+#define APUNTA_AZUL 3
+#define DISPARO_AZUL 4
+#define EN_PROCESO_DE_ENVIO 5
+#define REPETIR_ANALISIS_DE_FRECUENCIA 6
 
-uint8_t case_valor_del_laser = SIN_DETECCION;
+
+uint8_t case_valor_del_laser = NO_DETECTADO;
 uint8_t figura_actual = FIGURA_SIN_DEFINIR;
 
 /* ----------------- ENVIO DE DATOS -----------------------------*/
@@ -487,10 +531,10 @@ volatile unsigned long tiempo_termina_tiro = 0;
 int activa_envio_de_resultados = NO;
 
 // variables para deteccion de disparo en analisis de frecuencia
-#define SIN_DETECCION 0
+#define NO_DETECTADO 0
 #define LASER_APUNTANDO 1
 #define DISPARO_DETECTADO 2
-// int8_t estado_detector = SIN_DETECCION;
+// int8_t estado_detector = NO_DETECTADO;
 
 //----
 volatile unsigned long tiempo_inicial_muestreo = 0;
@@ -499,7 +543,7 @@ volatile unsigned long tiempo_actual_leds = 0;
 volatile unsigned long periodo_muestreo_mseg = 1000;
 volatile unsigned long pulsos = 0;
 volatile unsigned long muestra[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+int captura_nueva_muestra =SI;
 
 volatile unsigned long promedio_muestreo = 0;
 float global_porcentaje_desviacion=1;
@@ -508,7 +552,7 @@ int media_estadistica_obtenida =0;
 volatile unsigned long acumulado = 0;
 int8_t rango_actual = 0;
 int8_t evalua_frecuencia = NO;
-int8_t posicion_nueva = SIN_DETECCION;
+int8_t posicion_nueva = NO_DETECTADO;
 int captura_tiempo_inicial = SI;
 
 // contadores para relojes de encendido y apagado tiras con figuras
@@ -538,8 +582,8 @@ uint8_t propietario_alternativo_id = 0;
 uint8_t propietario_alternativo_color = 0;
 
 // declaracion de funciones
-float Porcentaje_De_Desviacion_Frecuencia();
-void Calcula_Frecuencia_Estadistica();
+void Analiza_Muestras();
+void Captura_20_muestras();
 
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len);
 void Test_Conexion_Diana();
@@ -557,13 +601,22 @@ int creloj_100mseg();
 int creloj_10mseg();
 
 int8_t detecto_laser = NO;
-int8_t encender_monitor_de__frecuencia = NO;
+int8_t activa_captura_de_muestras = NO;
+void Calcular_Datos_Del_Tiro_Y_Tirador();
 
 // publicidad
 void Muestra_Figura_Publicidad(int local_figura_publicidad);
 void Ejecuta_Publicidad();
 void Matriz_Ilumina_Mira_Aleatorio();
 void Matriz_Ilumina_Mira_Color_Jugador_Apuntado();
+
+//nueva estructura
+void Analiza_Y_Dibuja_Figura();
+void Dibuja_Apunta_Verde();
+void Dibuja_Disparo_Verde();
+void Dibuja_Apunta_Azul();
+void Dibuja_Disparo_Azul();
+void Reinicializa_Variables_Antes_De_Apagar();
 
 // figuras
 
@@ -650,7 +703,7 @@ void Matriz_200_Negativo();
 void Matriz_100_Negativo();
 void Matriz_75_Negativo();
 
-void Matriz_Valor_De_Tiro(uint8_t local_color_de_disparo);
+void Dibuja_Valor_Disparo();
 void Aro_Apuntando_Secuencia();
 void Matriz_Aro_1_Apuntado();
 void Matriz_Aro_2_Apuntado();
@@ -694,6 +747,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
   if (datos_recibidos.t >= TIRO_ACTIVO) // TIRO ACTIVO =1 &&  JUGADOR READY =2
   {
     // inicializa los pulsos para analisis de frecuencia
+    activa_captura_de_muestras = SI;
+    casilla_muestra=0;
+    captura_nueva_muestra=SI;
     pulsos = 0;
 
     // Asigna "color original" de tirador privado -> rojo,verde o azul
@@ -707,7 +763,6 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len)
     tira.clear();
     tira.show();
     // <-
-    encender_monitor_de__frecuencia = SI;
     Serial.println("case_estado_diana= ENCENDIDO");
   }
   else
@@ -742,7 +797,7 @@ void Asigna_Pantalla()
 
 int contador = 0;
 int temporizador_publicidad = 0;
-int enciende_publicidad = 30; // ENCIENDE FIGURA
+int enciende_publicidad = 120; // ENCIENDE FIGURA EN SEGUNDOS
 int apaga_publicidad = 34; // CAMBIA A FIGURA DE TEST
 int cambio_publicidad = 38; // APAGA FIGURA Y REGRESA
 int segundos_apagado= 3; // se regresa apagado anted de enciende de nuevo
@@ -798,14 +853,360 @@ void setup()
 
 /* ----------------------  F I N    S E T U P -------------------------*/
 
-/* ------------------------inicio loop ----------------------------*/
 void loop()
 {
-  encender_monitor_de__frecuencia=SI;
-  if (encender_monitor_de__frecuencia == SI) // se habilita cuando se reciben datos, se deshabilita cuando se detecta disparo para evitar conflicto mientras se manda resultado
+  switch (case_estado_diana)
+  {
+  case APAGADO:
+    Ejecuta_Publicidad();
+    break;
+  case ENCENDIDO:
+
+    // PASO UNO-11111 analizar 200 mseg la frecuencia y calsifica el valor de tirador,color en juego Privado y Publico
+    if (activa_captura_de_muestras == SI)
+    {
+      Captura_20_muestras(); // captura las 20 muestras
+      Analiza_Muestras();    // analiza 19 muestras ignorando la muestra[0] que es no es confiable
+      if (datos_del_tiro.resultado_de_analisis == VALIDO)
+      {
+        Calcular_Datos_Del_Tiro(); // obtiene de la frecuencias el valor->color del tiro y valor
+        Evalua_Tirador_Correcto(); // Si PRIVADO-> valida corresponda al color del tiro solicitado
+        if (datos_del_tiro.tirador_correcto == NO)
+        {
+          datos_del_tiro.valor_del_tiro = REPETIR_ANALISIS_DE_FRECUENCIA;
+          datos_del_tiro.color_del_tiro = COLOR_SIN_ASIGNAR;
+          datos_del_tiro.color_del_tirador = COLOR_SIN_ASIGNAR;
+        }
+        Switchea_Izquierda_Por_Derecha; // para dar movimiento a las figuras
+      }
+      else
+      {
+        datos_del_tiro.valor_del_tiro = REPETIR_ANALISIS_DE_FRECUENCIA;
+      }
+    }
+
+    // PASO DOS -22222  Despliega la figura que corresponde al estado de la celda solar
+    switch (datos_del_tiro.valor_del_tiro)
+    {
+    case NO_DETECTADO:
+      figura_actual = Evalua_y_Dibuja_Figura(); //  Dibuja figuraSolicitada->(figura-vs-tiempo)
+      activa_captura_de_muestras = SI;
+      break;
+    case APUNTA_VERDE:
+      Aro_Apuntando_Secuencia(); //dibuja aro con base : datos_del_tiro.color_del_tiro
+      activa_captura_de_muestras = SI;
+      habilita_enviar_paquete == NO;
+      break;
+    case DISPARO_VERDE:
+      Dibuja_Valor_Disparo(); //Con base : datos_del_tirador.valor_figura
+      activa_captura_de_muestras = NO;
+      habilita_enviar_paquete == SI;
+      tiempo_termina_tiro = millis();
+      Arma_Paquete_De_Envio();
+      datos_del_tiro.valor_del_tiro=EN_PROCESO_DE_ENVIO;
+      intentos_envio = 1;
+      break;
+    case APUNTA_AZUL:
+      Aro_Apuntando_Secuencia(); //dibuja aro con base : datos_del_tiro.color_del_tiro
+      activa_captura_de_muestras = SI;
+      habilita_enviar_paquete == NO;
+      break;
+    case DISPARO_AZUL:
+      Dibuja_Valor_Disparo(); //Con base : datos_del_tirador.valor_figura
+      activa_captura_de_muestras = NO;
+      habilita_enviar_paquete == SI;
+      tiempo_termina_tiro = millis();
+      Arma_Paquete_De_Envio();
+      datos_del_tiro.valor_del_tiro=EN_PROCESO_DE_ENVIO; //para segunda vuelta ya no haga nada y se vaya envio de nuevo
+      intentos_envio=1;
+      break;
+    case REPETIR_ANALISIS_DE_FRECUENCIA:
+         activa_captura_de_muestras = SI;
+         break;
+    case EN_PROCESO_DE_ENVIO:
+      // no hace nada para pasar a Paso 3 y intento de envio de resultados al monitor
+      break;
+    }
+
+    //PASO TRES -33333  Envio de los datos al monitor, se pone en raiz porque es requerimiento, intentara 3 veces
+    if (habilita_enviar_paquete == SI)
+    {
+      Serial.println("ENVIO PAQUETE :" + String(datos_enviados.n));
+      esp_err_t result = esp_now_send(broadcastAddressMonitor, (uint8_t *)&datos_enviados, sizeof(structura_mensaje));
+      Espera(250);
+      if (result == ESP_OK)
+        {
+          Serial.println("Envio Paquete OK, intento : " + String(intentos_envio));
+          tira.clear();
+          tira.show();
+          // nueva version
+          Reinicializa_Variables_Antes_De_Apagar();
+          case_estado_diana=APAGADO;
+          //pendiente --> reincializa contador de publicidad para espera
+        }
+      else
+        { //incrementa contador y vuelve a intentar
+          Serial.println("Error envio : " + String(intentos_envio));
+          intentos_envio++;
+          datos_del_tiro.valor_del_tiro=EN_PROCESO_DE_ENVIO; //para que no cambie nada el paso 2
+          if (intentos_envio>3)
+          {
+            Reinicializa_Variables_Antes_De_Apagar();
+            case_estado_diana=APAGADO;
+            // pendiente reinicia contador de publicidad y a que puede mezclar con dian en lo que espera
+          }
+          tira.clear();
+          tira.show();
+          tira.setPixelColor(1, tira.Color(0, 250, 0));
+          tira.setPixelColor(1, tira.Color(1, 250, 0));
+          tira.setPixelColor(1, tira.Color(2, 250, 0));
+          tira.show();
+          previous_time_reenvio = millis();
+        }
+    } // fin if habilita_enviar_paquete
+
+    break; //ENCENDIDO
+  } // case_estado_diana
+
+}
+
+void Calcular_Datos_Del_Tiro()
+{
+  if (datos_del_tiro.media_obtenida < 10)
+  {
+    datos_del_tiro.valor_del_tiro = NO_DETECTADO;
+    datos_del_tiro.color_del_tiro = COLOR_SIN_ASIGNAR;
+    datos_del_tiro.color_del_tirador = COLOR_SIN_ASIGNAR;
+  }
+  else
+  {
+    if (datos_del_tiro.media_obtenida <= 13)
+    {
+      datos_del_tiro.valor_del_tiro = APUNTA_VERDE;
+      datos_del_tiro.color_del_tiro = GREEN;
+      datos_del_tiro.color_del_tirador = GREEN;
+    }
+    else
+    {
+      if (datos_del_tiro.media_obtenida <= 17)
+      {
+      datos_del_tiro.valor_del_tiro = DISPARO_VERDE;
+      datos_del_tiro.color_del_tiro = GREEN;
+      datos_del_tiro.color_del_tirador = GREEN; 
+      }
+      else
+      {
+        if (datos_del_tiro.media_obtenida <= 24) 
+        {
+        datos_del_tiro.valor_del_tiro = APUNTA_AZUL;
+        datos_del_tiro.color_del_tiro = BLUE;
+        datos_del_tiro.color_del_tirador = BLUE;
+        }
+        else
+        {
+          if (datos_del_tiro.media_obtenida <= 31) 
+          {
+          datos_del_tiro.valor_del_tiro = NO_DETECTADO;
+          datos_del_tiro.color_del_tiro = COLOR_SIN_ASIGNAR;
+          datos_del_tiro.color_del_tirador = COLOR_SIN_ASIGNAR; 
+          }
+          else
+          {
+            if (datos_del_tiro.media_obtenida <= 42) 
+            {
+            datos_del_tiro.valor_del_tiro = DISPARO_AZUL;
+            datos_del_tiro.color_del_tiro = BLUE;
+            datos_del_tiro.color_del_tirador = BLUE; 
+            }
+            else
+            {
+            datos_del_tiro.valor_del_tiro = NO_DETECTADO;
+            datos_del_tiro.color_del_tiro = COLOR_SIN_ASIGNAR;
+            datos_del_tiro.color_del_tirador = COLOR_SIN_ASIGNAR;           
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void Evalua_Tirador_Correcto()
+{
+  if (datos_recibidos.pp == PRIVADO)
+  {
+    if (datos_del_tiro.color_del_tiro == datos_recibidos.c)
+    {
+      datos_del_tiro.tirador_correcto = SI;
+    }
+    else
+    {
+      datos_del_tiro.tirador_correcto = NO;
+    }
+  }
+  if (datos_recibidos.pp == PUBLICO)
+  {
+    datos_del_tiro.tirador_correcto = SI;
+  }
+}
+
+
+
+void Reinicializa_Variables_Antes_De_Apagar(){
+  // De Paso 0 apagado
+  temporizador_publicidad=0; // para que inicie cuenta antes de meter publicidad
+  // De Paso 1
+  activa_captura_de_muestras=SI;
+  datos_del_tiro.valor_del_tiro=NO_DETECTADO;
+  // De Paso 2
+  habilita_enviar_paquete=NO;
+  // De Paso 3
+    intentos_envio=1;
+
+}
+
+
+void Captura_20_muestras()
+{
+  while (captura_nueva_muestra == SI)
+  {
+    if (creloj_10mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)
+      muestra[casilla_muestra] = pulsos;
+      pulsos = 0;
+      casilla_muestra++;
+      if (casilla_muestra == 20) // se paso a la 20 por orden anterior,se regresa al origen
+      {
+        captura_nueva_muestra = NO;
+        casilla_muestra = 0; // regresa a casilla[0]
+      }
+  }
+}
+
+void Analiza_Muestras() // Calculos de la media, varianza, desviacion estandar
+{
+  float local_primera_media = 0;
+  float local_segunda_media = 0;
+  float local_nivel_inferior = 0;
+  float local_nivel_superior = 0;
+  int muestras_validas = 0;
+  float local_suma_cuadrados = 0;
+  float local_varianza_muestral = 0;
+  float local_distribucion_estandar = 1;
+  float local_porcentaje_desviacion = 1;
+  volatile unsigned long local_resta_muestra[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  volatile unsigned long local_cuadrados_resta_muestra[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  volatile unsigned long local_muestra_valida[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  // Saca Media todas las muestra[0] para eliminar maximos y minimos
+  for (i = 1; i <= 19; i++)
+  {
+    local_primera_media = local_primera_media + muestra[i];
+  }
+  local_primera_media = local_primera_media / 19; // son # casillas de muestreo
+  if (local_primera_media > 800)                  // menor a 800 es ruido de celda solar
+  {                                               // solo del la muestra[1]--muestra[19] la 0 no se utilizara
+    // Se elimina las muestras que estan mas alla de la media+-.5media
+    local_nivel_inferior = local_primera_media - (local_primera_media / 2);
+    local_nivel_superior = local_primera_media + (local_primera_media / 2);
+    for (i = 1; 1 <= 19; i++)
+    {
+      if ((muestra[i] > local_nivel_inferior) && (muestra[i] < local_nivel_superior))
+      {
+        local_muestra_valida[i] = VALIDO;
+        muestras_validas++;
+      }
+    }
+
+    // Saca segunda media con muestras recortadas
+    for (i; i <= 19; i++)
+    {
+      if (local_muestra_valida[i] == VALIDO)
+      {
+        local_segunda_media = local_segunda_media + muestra[i];
+      }
+    }
+    local_segunda_media = local_segunda_media / (muestras_validas);
+
+    // Resta Media de casillas, se hace para todas, al final solo se escogen las validas solamente
+    for (i = 1; i <= 19; i++)
+    {
+      local_resta_muestra[i] = muestra[i] - int(local_segunda_media);
+    }
+    // Obtiene Cuadrados de casillas de resta para quitar los negativos se esogen la validas al final
+    for (i = 1; i <= 19; i++)
+    {
+      local_cuadrados_resta_muestra[i] = local_resta_muestra[i] * local_resta_muestra[i];
+    }
+    // Suma Cuadrados los validos solamente
+    for (i = 1; i <= 19; i++)
+    {
+      if (local_muestra_valida[i] == VALIDO)
+      {
+        local_suma_cuadrados = local_suma_cuadrados + local_cuadrados_resta_muestra[i];
+      }
+    }
+    // Varianza Muestral (n-1) n=peridos valids
+    local_varianza_muestral = local_suma_cuadrados / (muestras_validas - 1);
+
+    // Desviacion estandar
+    local_distribucion_estandar = sqrt(local_varianza_muestral);
+    local_porcentaje_desviacion = local_distribucion_estandar / local_segunda_media;
+    // guarda resultados
+    datos_del_tiro.media_obtenida = int(local_segunda_media);
+    datos_del_tiro.porcentaje_desviacion = local_porcentaje_desviacion;
+    if (local_porcentaje_desviacion <= 0.35)
+    {
+      datos_del_tiro.resultado_de_analisis = VALIDO;
+    }
+    else
+    {
+      datos_del_tiro.resultado_de_analisis = RECHAZADO;
+    }
+  } // 800
+  else
+  { // Ruido de celda, se da como un SIN DETECCION
+    // SIN DETECCION
+    datos_del_tiro.resultado_de_analisis = VALIDO;
+    datos_del_tiro.media_obtenida = 0;
+    datos_del_tiro.porcentaje_desviacion = 0.00;
+  }
+}
+
+void Analiza_Y_Dibuja_Figura(){
+  //sin importar el tiro analiza que digura se muestra y los valores que la acompanan
+
+}
+void Dibuja_Apunta_Verde(){
+
+}
+
+void Dibuja_Disparo_Verde(){
+
+}
+
+void Dibuja_Apunta_Azul(){
+
+}
+
+void Dibuja_Disparo_Azul(){
+ // calcula el color del tirador correcto
+ // presenta el valor del tiro
+
+}
+
+
+
+
+
+
+/*------------------------------------------------------------------------------------------------------------------------------------*/
+/* ------------------------inicio loop ----------------------------*/
+void respaldo_loup()
+{
+  activa_captura_de_muestras=SI;
+  if (activa_captura_de_muestras == SI) // se habilita cuando se reciben datos, se deshabilita cuando se detecta disparo para evitar conflicto mientras se manda resultado
   {
     //Serial.print("CF ");
-    Calcula_Frecuencia_Estadistica();
+    Captura_20_muestras();
   }
   switch (case_estado_diana)
   {
@@ -819,6 +1220,8 @@ void loop()
     Analiza_Posicion_En_Encendido();
     break;
   }
+
+
   // PROCESO FINAL,
   // ENVIA LOS DATOS AMONITOR Y APAGA DIANA, este proceso tiene que estar en nivel loop por requerimiento del esp_now_send
   if (habilita_enviar_paquete == SI)
@@ -975,7 +1378,7 @@ void Analiza_Posicion_En_Encendido()
       Dibuja_Valor_Del_Laser(case_valor_del_laser);
       if ((case_valor_del_laser == DISPARO_VERDE) || (case_valor_del_laser == DISPARO_AZUL) || (salir_por_timeout == SI))
       {
-        encender_monitor_de__frecuencia = NO; // suspende la lectura de la frecuencia para evitar conflicto durante el envio al monitor
+        activa_captura_de_muestras = NO; // suspende la lectura de la frecuencia para evitar conflicto durante el envio al monitor
         tiempo_termina_tiro = millis();
         // En  Envia_Resultados_Al_Monitor(), cambia el proceso inicial de stanbye a preparar la informacion a enviar
         case_proceso_envio = PREPARA_PAQUETE_ENVIO;
@@ -999,7 +1402,7 @@ void Dibuja_Valor_Del_Laser(int local_case_valor_del_laser)
 {
   switch (local_case_valor_del_laser)
   {
-  case SIN_DETECCION:
+  case NO_DETECTADO:
     // if (reloj_200mseg() == DETECTA_CAMBIO_ESTADO_RELOJ)
     {
       // figura de fondo la imprime 
@@ -1031,7 +1434,7 @@ void Dibuja_Valor_Del_Laser(int local_case_valor_del_laser)
     break;
   case DISPARO_AZUL:
     /*code*/
-    // encender_monitor_de__frecuencia = NO;
+    // activa_captura_de_muestras = NO;
     Aro_Disparo(); // Se queda 250 milisegundos, no lleva tira.show() se activa dentro del Aro_Disparo
     posicion_nueva = DISPARO_DETECTADO;
     break;
@@ -1062,7 +1465,7 @@ void Reinicia_Todas_Las_Variables_Al_Termnar()
   // inicializa variables de freceuncia
   rango_actual = 0;
   evalua_frecuencia = NO;
-  posicion_nueva = SIN_DETECCION;
+  posicion_nueva = NO_DETECTADO;
   captura_tiempo_inicial = SI;
   promedio_muestreo = 0;
   nueva_frecuencia = 0;
@@ -1343,89 +1746,6 @@ void Despliega_datos_recibidos()
 }
 
 
-void Calcula_Frecuencia_Estadistica()
-{
-  if (creloj_10mseg()==DETECTA_CAMBIO_ESTADO_RELOJ)
-  { 
-    muestra[casilla_muestra] = pulsos;
-    pulsos = 0;
-    casilla_muestra++;
-    if (casilla_muestra == 20) // se paso a la 20 por orden anterior,se regresa al origen
-    {
-      casilla_muestra = 0; // regresa a casilla[0]
-      if (Porcentaje_De_Desviacion_Frecuencia() <= tolerancia_desviacion_std)
-      { // datos mayores a 1Khz y desviacion menor a 35% respectoa la media
-        evalua_frecuencia = SI;
-        nueva_frecuencia = media_estadistica_obtenida;
-        Serial.println(nueva_frecuencia);
-      }
-      else  //solo valores arriba de 1khz que desviacion en mayor a 35%
-      {
-        evalua_frecuencia = NO;
-        // Serial.print("NO valida = ");
-        // Serial.print("Media Estadistica ="+String(media_estadistica_obtenida)+"  D: ");
-        // Serial.println(global_porcentaje_desviacion);
-
-        // nueva_frecuencia= se mantiene la anterior
-      }
-    }
-  }
-}
-
-float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza, desviacion estandar
-{
-  float local_media_muestral = 0;
-  float local_suma_cuadrados = 0;
-  float local_varianza_muestral = 0;
-  float local_distribucion_estandar=1;
-  float local_porcentaje_desviacion=1;
-  volatile unsigned long local_resta_muestra[20] =            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  volatile unsigned long local_cuadrados_resta_muestra[20] =  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  // Obtiene Media
-  for (i = 0; i <= 19; i++)
-  {
-    local_media_muestral = local_media_muestral + muestra[i];
-  }
-  local_media_muestral = local_media_muestral / 19; // son # casillas de muestreo
-
-  // Resta Media de casillas
-  for (i = 0; i <= 19; i++)
-  {
-    local_resta_muestra[i] = muestra[i] - int(local_media_muestral);
-  }
-  // Obtiene Cuadrados de casillas de resta para quitar los negativos
-  for (i = 0; i <= 19; i++)
-  {
-    local_cuadrados_resta_muestra[i] = local_resta_muestra[i] * local_resta_muestra[i];
-  }
-  // Suma Cuadrados
-  for (i = 0; i <= 19; i++)
-  {
-    local_suma_cuadrados = local_suma_cuadrados + local_cuadrados_resta_muestra[i];
-  }
-  // Varianza Muestral (n-1) n=20 periodos
-  local_varianza_muestral = local_suma_cuadrados / 19; 
-  
-  // Desviacion estandar
-  local_distribucion_estandar=sqrt(local_varianza_muestral);
-
-  // Calculo de la desviacion vs la media de la muestra
-  if (local_media_muestral >= 10) // evalua si son validos los datos arriba de 1khz
-    { 
-      // para no dividir entre 0
-      local_porcentaje_desviacion = local_distribucion_estandar / local_media_muestral;
-      media_estadistica_obtenida = int(local_media_muestral);
-      global_porcentaje_desviacion=local_porcentaje_desviacion;
-    }
-  else // todos los datos de abajo de 1 khz lo manda a 0
-    { // Se quita la basura y se deja limpia la señal con frecuencia=0
-      local_porcentaje_desviacion = 0; // para hacer valida la lectura
-      media_estadistica_obtenida = 0;  // para dar un valor 0 en el ruido
-      Serial.print("*");
-      Serial.println(int(local_media_muestral));
-    }
-  return local_porcentaje_desviacion;
-}
 
 
 
@@ -1434,7 +1754,7 @@ float Porcentaje_De_Desviacion_Frecuencia()   // Calculos de la media, varianza,
 uint8_t Calcula__Valor_Del_Laser()
 {
   //Sin deteccion valor menor a 900 Hrz
-  uint8_t resultado = SIN_DETECCION; // en caso que sea cualquier otra frecuencia regresa el valor SIN_DETECCION
+  uint8_t resultado = NO_DETECTADO; // en caso que sea cualquier otra frecuencia regresa el valor NO_DETECTADO
 
   // Verde apunta 1.2K
   if ((nueva_frecuencia > (frecuencia_apunta_tiro_verde - ajuste_frecuencia_abajo)) && (nueva_frecuencia < (frecuencia_apunta_tiro_verde + ajuste_frecuencia_arriba)))
@@ -1662,14 +1982,14 @@ uint8_t Evalua_y_Dibuja_Figura()
 /*------------------------------------------------------------------------*/
 uint8_t Evalua_Figura_Normal()
 {
-  uint8_t resultado_figura = FIGURA_SIN_DEFINIR;
+  uint8_t local_resultado_figura = FIGURA_SIN_DEFINIR;
   int rango = millis() - tiempo_inicia_tiro;
 
   // clasifica la figura dependiendo del tiempo df (velocidad de cambio figura)
 
   if (rango < datos_recibidos.vf * 1)
   {
-    resultado_figura = NORMAL_OSO;
+    local_resultado_figura = NORMAL_OSO;
     valor_puntuacion_figura = PUNTOS_NORMAL_OSO;
     Matriz_Oso();
   }
@@ -1677,7 +1997,7 @@ uint8_t Evalua_Figura_Normal()
   {
     if (rango < (datos_recibidos.vf * 2))
     {
-      resultado_figura = NORMAL_MARIPOSA;
+      local_resultado_figura = NORMAL_MARIPOSA;
       valor_puntuacion_figura = PUNTOS_NORMAL_MARIPOSA;
       Matriz_Mariposa();
     }
@@ -1685,7 +2005,7 @@ uint8_t Evalua_Figura_Normal()
     {
       if (rango < (datos_recibidos.vf * 3))
       {
-        resultado_figura = NORMAL_ZORRA;
+        local_resultado_figura = NORMAL_ZORRA;
         valor_puntuacion_figura = PUNTOS_NORMAL_ZORRA;
         Matriz_Zorra();
       }
@@ -1693,27 +2013,30 @@ uint8_t Evalua_Figura_Normal()
       {
         if (rango < (datos_recibidos.vf * 4))
         {
-          resultado_figura = NORMAL_ARANA;
+          local_resultado_figura = NORMAL_ARANA;
           valor_puntuacion_figura = PUNTOS_NORMAL_ARANA;
           Matriz_Arana();
         }
         else
         {
-          resultado_figura = NORMAL_LAGARTIJA;
+          local_resultado_figura = NORMAL_LAGARTIJA;
           valor_puntuacion_figura = PUNTOS_NORMAL_LAGARTIJA;
           Matriz_Lagartija();
         }
       } // end if vf*3
     } // end if vf*2
   } // end if vf
-  return resultado_figura;
+  datos_del_tiro.tipo_de_figura=NORMAL;
+  datos_del_tiro.resultado_figura=local_resultado_figura;
+  datos_del_tiro.valor_figura=valor_puntuacion_figura;
+  return local_resultado_figura;
 }
 
 /*-----------------------------------------------------------------------*/
 uint8_t Evalua_Figura_Bono()
 {
   // Mostrara la figura por dos periodos, en caso de no impacto manda el valor a cero
-  uint8_t resultado = FIGURA_SIN_DEFINIR;
+  uint8_t local_resultado_figura = FIGURA_SIN_DEFINIR;
   int rango = millis() - tiempo_inicia_tiro;
   if (rango < (datos_recibidos.vf * 2))
   {
@@ -1721,19 +2044,19 @@ uint8_t Evalua_Figura_Bono()
     switch (datos_recibidos.xf)
     {
     case BONO_CORAZON:
-      resultado = datos_recibidos.xf;
+      local_resultado_figura = datos_recibidos.xf;
       valor_puntuacion_figura = PUNTOS_BONO_CORAZON;
       Matriz_Corazon();
       break;
 
     case BONO_PINGUINO:
-      resultado = datos_recibidos.xf;
-      valor_puntuacion_figura = PUNTOS_BONO_PIGUINO;
+      local_resultado_figura  = datos_recibidos.xf;
+      valor_puntuacion_figura = PUNTOS_BONO_PINGUINO;
       Matriz_Pinguino();
       break;
 
     case BONO_RANA:
-      resultado = datos_recibidos.xf;
+      local_resultado_figura = datos_recibidos.xf;
       valor_puntuacion_figura = PUNTOS_BONO_RANA;
       Matriz_Rana();
       break;
@@ -1741,39 +2064,44 @@ uint8_t Evalua_Figura_Bono()
   }
   else
   {
-    resultado = BONO_RANA;
+    local_resultado_figura  = BONO_RANA;
     valor_puntuacion_figura = PUNTOS_BONO_RANA;
     Matriz_Rana();
     tira.show();
     // salir_por_timeout=SI;
   }
   tira.show();
-  return resultado;
+  datos_del_tiro.tipo_de_figura=BONO;
+  datos_del_tiro.resultado_figura=local_resultado_figura;
+  datos_del_tiro.valor_figura=valor_puntuacion_figura;  
+  return local_resultado_figura ;
 }
+
 
 uint8_t Evalua_Figura_Castigo()
 {
-  uint8_t resultado = FIGURA_SIN_DEFINIR;
+  uint8_t local_resultado_figura = FIGURA_SIN_DEFINIR;
   int rango = millis() - tiempo_inicia_tiro;
   if (rango < (datos_recibidos.vf * 2))
   {
+    datos_del_tiro.tipo_de_figura=CASTIGO;
     // Serial.println("Castigo- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
     switch (datos_recibidos.xf)
     {
     case CASTIGO_UNICORNIO:
-      resultado = datos_recibidos.xf;
+      local_resultado_figura = CASTIGO_UNICORNIO;
       valor_puntuacion_figura = PUNTOS_CASTIGO_UNICORNIO;
       Matriz_Unicornio();
       break;
 
     case CASTIGO_BOTELLA:
-      resultado = datos_recibidos.xf;
+      local_resultado_figura = CASTIGO_BOTELLA;
       valor_puntuacion_figura = PUNTOS_CASTIGO_BOTELLA;
       Matriz_Botella();
       break;
 
     case CASTIGO_COPA:
-      resultado = datos_recibidos.xf;
+      local_resultado_figura = CASTIGO_COPA;
       valor_puntuacion_figura = PUNTOS_CASTIGO_COPA;
       Matriz_Copa();
       break;
@@ -1781,53 +2109,58 @@ uint8_t Evalua_Figura_Castigo()
   }
   else
   {
-    if (rango < (datos_recibidos.vf * 4)) // si no dispara al castigo, se da el premio segun el castigo
+    if (rango < (datos_recibidos.vf * 4)) // si no dispara al castigo, se convierte en BONO
     {
+      datos_del_tiro.tipo_de_figura=BONO;
       // Serial.println("CastigoBono- valor de datos_recibidos.xf : " + String(datos_recibidos.xf));
       switch (datos_recibidos.xf)
       {
       case CASTIGO_UNICORNIO: // se premia con mayor punturacion  por no disparar a unicornio
-        resultado = BONO_CORAZON;
+        local_resultado_figura = BONO_CORAZON;
         valor_puntuacion_figura = PUNTOS_BONO_CORAZON;
         Matriz_Corazon();
         break;
 
       case CASTIGO_BOTELLA:
-        resultado = BONO_PINGUINO;
+        local_resultado_figura = BONO_PINGUINO;
         valor_puntuacion_figura = PUNTOS_BONO_PINGUINO;
         Matriz_Pinguino();
         break;
 
       case CASTIGO_COPA:
-        resultado = BONO_RANA;
+        local_resultado_figura = BONO_RANA;
         valor_puntuacion_figura = PUNTOS_BONO_RANA;
         Matriz_Rana();
         break;
       }
     }
-
     else
     {
-      resultado = BONO_RANA; // espera el disparo y sa bono menor
+      datos_del_tiro.tipo_de_figura=BONO;
+      local_resultado_figura = BONO_RANA; // mayor de 4 periodos de esprea
       valor_puntuacion_figura = PUNTOS_BONO_RANA;
       Matriz_Rana();
-      tira.show();
     }
   }
   tira.show();
-  return resultado;
+  datos_del_tiro.resultado_figura = local_resultado_figura;
+  datos_del_tiro.valor_figura = valor_puntuacion_figura;
+  return local_resultado_figura;
 }
 
 uint8_t Evalua_Figura_Calibra()
 {
-  uint8_t resultado = FIGURA_SIN_DEFINIR;
-  resultado = CALIBRA_OK;
+  uint8_t local_resultado_figura = FIGURA_SIN_DEFINIR;
+  local_resultado_figura = CALIBRA_OK;
   valor_puntuacion_figura = PUNTOS_CALIBRA_0;
+  datos_del_tiro.tipo_de_figura=CALIBRA;
+  datos_del_tiro.resultado_figura = local_resultado_figura;
+  datos_del_tiro.valor_figura = valor_puntuacion_figura;
   tira.clear();
   Asigna_Color_Basandose_En_Color_Recibido_De_Monitor();
   Matriz_Calibra();
   tira.show();
-  return resultado;
+  return local_resultado_figura;
 }
 
 void Switchea_Izquierda_Por_Derecha()
@@ -5258,20 +5591,20 @@ void Asigna_Color_Basandose_En_Color_Recibido_De_Monitor()
     pixel_azul = 0;
     break;
 
-  case RED:
-    /*code*/
-    // Serial.println("Programa color rojo para castigos");
-    pixel_rojo = 0;
-    pixel_verde = 250;
-    pixel_azul = 0;
-    break;
-
   case BLUE:
     /*code*/
     // Serial.println("Programa color azul");
     pixel_rojo = 0;
     pixel_verde = 0;
     pixel_azul = 250;
+    break;
+
+  case RED:
+    /*code*/
+    // Serial.println("Programa color rojo para castigos");
+    pixel_rojo = 0;
+    pixel_verde = 250;
+    pixel_azul = 0;
     break;
 
   case ARCOIRIS:
@@ -5285,24 +5618,7 @@ void Asigna_Color_Basandose_En_Color_Recibido_De_Monitor()
 
 void Asigna_Color_Aro_Basandose_En_Tiro_Pistola()
 {
-  // define color con base en el color de la pistola detectada
-  switch (color_de_disparo)
-  { // rick
-  case GREEN:
-    /*code*/
-    pixel_rojo = 250;
-    pixel_verde = 0;
-    pixel_azul = 0;
-    break;
-
-  case BLUE:
-    /*code*/
-    // Serial.println("Programa color azul");
-    pixel_rojo = 0;
-    pixel_verde = 0;
-    pixel_azul = 250;
-    break;
-  }
+  
 }
 
 /*---------------------------------*/
@@ -5420,7 +5736,32 @@ void Aro_Apuntando()
 
 void Aro_Apuntando_Secuencia()
 {
-  // tira.clear();
+  // define color con base en el color de la pistola detectada
+  switch (datos_del_tiro.color_del_tiro)
+  { // rick
+  case GREEN:
+    /*code*/
+    pixel_rojo = 250;
+    pixel_verde = 0;
+    pixel_azul = 0;
+    break;
+
+  case BLUE:
+    /*code*/
+    // Serial.println("Programa color azul");
+    pixel_rojo = 0;
+    pixel_verde = 0;
+    pixel_azul = 250;
+    break;
+
+  default:
+    pixel_rojo = 0;
+    pixel_verde =255;
+    pixel_azul = 0;
+    break;
+  }
+
+  // Define el aro a mostrar alrededor de la figura
   switch (Posicion_Aro)
   { // rick
   case UNO:
@@ -5430,13 +5771,14 @@ void Aro_Apuntando_Secuencia()
     break;
   case DOS:
     Matriz_Aro_2_Apuntado();
-    Matriz_Ilumina_Mira_Color_Jugador_Apuntado();
+    Matriz_Ilumina_Mira_Color_Jugador_Apuntado2();
     Posicion_Aro = UNO;
     break;
   }
 }
 
-void Matriz_Ilumina_Mira_Color_Jugador_Apuntado(){
+void Matriz_Ilumina_Mira_Color_Jugador_Apuntado()
+{
   tira.setPixelColor(Pantalla[256], pixel_rojo, pixel_verde, pixel_azul);
   tira.setPixelColor(Pantalla[257], pixel_rojo, pixel_verde, pixel_azul);
   tira.setPixelColor(Pantalla[258], pixel_rojo, pixel_verde, pixel_azul);
@@ -5445,7 +5787,15 @@ void Matriz_Ilumina_Mira_Color_Jugador_Apuntado(){
   tira.setPixelColor(Pantalla[261], pixel_rojo, pixel_verde, pixel_azul);
 
 }
-
+void Matriz_Ilumina_Mira_Color_Jugador_Apuntado2 ()
+{
+  tira.setPixelColor(Pantalla[256], 0,0,0);
+  tira.setPixelColor(Pantalla[257], 0,0,0);
+  tira.setPixelColor(Pantalla[258], 0,0,0);
+  tira.setPixelColor(Pantalla[259], 0,0,0);
+  tira.setPixelColor(Pantalla[260], 0,0,0);
+  tira.setPixelColor(Pantalla[261], 0,0,0);
+}
 
 void Barra_Blanca()
 {
@@ -5497,18 +5847,17 @@ void Valor_De_Tiro(uint8_t local_color_de_disparo)
   tira.show();
   for (int i = 0; i <= 6; i++)
   {
-    Matriz_Valor_De_Tiro(local_color_de_disparo);
+    Dibuja_Valor_Disparo();
     tira.show();
     Espera(100);
   }
   // Espera(100);
 }
 
-void Matriz_Valor_De_Tiro(uint8_t local_color_de_disparo)
+void Dibuja_Valor_Disparo()
 {
-  // Serial.println("Matriz_Valor_De_Tiro--> Figura Actual => "+String(figura_actual));
-  // Serial.println("Matriz_Valor_De_Tiro--> Color de tiro => "+String(local_color_de_disparo));
-  if (local_color_de_disparo == GREEN)
+  // Dibuja Contorno del color del tiro
+  if (datos_del_tiro.color_del_tiro == GREEN)
   {
     Matriz_Green();
   }
@@ -5516,62 +5865,378 @@ void Matriz_Valor_De_Tiro(uint8_t local_color_de_disparo)
   { // BLUE
     Matriz_Blue();
   }
-  switch (figura_actual)
+
+  // PASO 1 Dibuja Valor figura
+  switch (datos_del_tiro.valor_figura)
   {
-  // castigos
-  case CASTIGO_UNICORNIO:
-    Matriz_200_Negativo();
-    break;
-  case CASTIGO_BOTELLA:
-    Matriz_100_Negativo();
-    break;
-  case CASTIGO_COPA:
-    Matriz_75_Negativo();
-    break;
+
   // Normal
   case NORMAL_OSO:
     /* code */
-    Matriz_50();
+    Valor_50();
     break;
   case NORMAL_ZORRA:
-    Matriz_40();
+    Valor_40();
     break;
   case NORMAL_MARIPOSA:
-    Matriz_45();
+    Valor_45();
     break;
   case NORMAL_PINGUINO:
-    Matriz_75();
+    Valor_75();
     break;
   case NORMAL_ARANA:
-    Matriz_35();
+    Valor_35();
     break;
   case NORMAL_LAGARTIJA:
-    Matriz_30();
+    Valor_30();
     break;
   case NORMAL_RANA:
-    Matriz_50();
+    Valor_50();
     break;
+
   // Bonos
   case BONO_CORAZON:
-    Matriz_100();
+    Valor_300();
     break;
   case BONO_PINGUINO:
-    Matriz_75();
+    Valor_200();
     break;
   case BONO_RANA:
-    Matriz_50();
+    Valor_150();
     break;
   case BONO_CORAZON_200:
-    Matriz_100();
+    Valor_100();
     break;
+
   case CALIBRA_OK:
-    Matriz_Ok();
+    Valor_00();
     break;
+
+  // castigos
+  case CASTIGO_UNICORNIO:
+    Valor_Menos_200();
+    break;
+  case CASTIGO_BOTELLA:
+    Valor_Menos_100();
+    break;
+  case CASTIGO_COPA:
+    Valor_Menos_70();
+    break;
+
+  // control
   default:
-    Serial.println("Matriz_Valor_De_Tiro--> Figura Actual-NO RECONOCIDA => " + String(figura_actual));
+    Valor_00();
+    Serial.println("Dibuja_Valor_Disparo--> Figura Actual-NO RECONOCIDA => " + String(figura_actual));
     break;
   }
+  tira.show();
+  Espera(100);
 }
+
+void Valor_50(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 67],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 76],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 92],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 83],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 99],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 108],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_40(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 67],100,100,100);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 76],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 92],100,100,100);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 83],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 99],100,100,100);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 108],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_45(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 67],100,100,100);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 92],100,100,100);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 99],100,100,100);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 117],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_75(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 117],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_35()
+{
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 117],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_30(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 76],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 83],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 108],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_300(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 56],100,100,100);tira.setPixelColor(Pantalla[ 55],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 50],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 69],100,100,100);tira.setPixelColor(Pantalla[ 71],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 75],100,100,100);tira.setPixelColor(Pantalla[ 77],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 90],100,100,100);tira.setPixelColor(Pantalla[ 88],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 84],100,100,100);tira.setPixelColor(Pantalla[ 82],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 101],100,100,100);tira.setPixelColor(Pantalla[ 103],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 107],100,100,100);tira.setPixelColor(Pantalla[ 109],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 120],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 114],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 133],100,100,100);tira.setPixelColor(Pantalla[ 135],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 139],100,100,100);tira.setPixelColor(Pantalla[ 141],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 154],100,100,100);tira.setPixelColor(Pantalla[ 152],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 148],100,100,100);tira.setPixelColor(Pantalla[ 146],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 165],100,100,100);tira.setPixelColor(Pantalla[ 167],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 171],100,100,100);tira.setPixelColor(Pantalla[ 173],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 184],100,100,100);tira.setPixelColor(Pantalla[ 183],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 178],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_200(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 56],100,100,100);tira.setPixelColor(Pantalla[ 55],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 50],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 69],100,100,100);tira.setPixelColor(Pantalla[ 71],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 75],100,100,100);tira.setPixelColor(Pantalla[ 77],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 90],100,100,100);tira.setPixelColor(Pantalla[ 88],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 84],100,100,100);tira.setPixelColor(Pantalla[ 82],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 101],100,100,100);tira.setPixelColor(Pantalla[ 103],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 107],100,100,100);tira.setPixelColor(Pantalla[ 109],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 120],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 114],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 131],100,100,100);tira.setPixelColor(Pantalla[ 135],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 139],100,100,100);tira.setPixelColor(Pantalla[ 141],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 156],100,100,100);tira.setPixelColor(Pantalla[ 152],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 148],100,100,100);tira.setPixelColor(Pantalla[ 146],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 163],100,100,100);tira.setPixelColor(Pantalla[ 167],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 171],100,100,100);tira.setPixelColor(Pantalla[ 173],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 184],100,100,100);tira.setPixelColor(Pantalla[ 183],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 178],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+}
+
+void Valor_150(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 56],100,100,100);tira.setPixelColor(Pantalla[ 55],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 50],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 68],100,100,100);tira.setPixelColor(Pantalla[ 71],100,100,100);tira.setPixelColor(Pantalla[ 75],100,100,100);tira.setPixelColor(Pantalla[ 77],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 91],100,100,100);tira.setPixelColor(Pantalla[ 88],100,100,100);tira.setPixelColor(Pantalla[ 84],100,100,100);tira.setPixelColor(Pantalla[ 82],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 100],100,100,100);tira.setPixelColor(Pantalla[ 103],100,100,100);tira.setPixelColor(Pantalla[ 107],100,100,100);tira.setPixelColor(Pantalla[ 109],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 120],100,100,100);tira.setPixelColor(Pantalla[ 119],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 114],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 132],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 139],100,100,100);tira.setPixelColor(Pantalla[ 141],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 155],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 148],100,100,100);tira.setPixelColor(Pantalla[ 146],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 164],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 171],100,100,100);tira.setPixelColor(Pantalla[ 173],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 184],100,100,100);tira.setPixelColor(Pantalla[ 183],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 178],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+
+void Valor_100()
+{
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 56],100,100,100);tira.setPixelColor(Pantalla[ 55],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 50],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 68],100,100,100);tira.setPixelColor(Pantalla[ 71],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 75],100,100,100);tira.setPixelColor(Pantalla[ 77],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 91],100,100,100);tira.setPixelColor(Pantalla[ 88],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 84],100,100,100);tira.setPixelColor(Pantalla[ 82],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 100],100,100,100);tira.setPixelColor(Pantalla[ 103],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 107],100,100,100);tira.setPixelColor(Pantalla[ 109],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 120],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 116],100,100,100);tira.setPixelColor(Pantalla[ 114],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 132],100,100,100);tira.setPixelColor(Pantalla[ 135],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 139],100,100,100);tira.setPixelColor(Pantalla[ 141],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 155],100,100,100);tira.setPixelColor(Pantalla[ 152],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 148],100,100,100);tira.setPixelColor(Pantalla[ 146],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 164],100,100,100);tira.setPixelColor(Pantalla[ 167],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 171],100,100,100);tira.setPixelColor(Pantalla[ 173],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 184],100,100,100);tira.setPixelColor(Pantalla[ 183],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 178],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_20(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],100,100,100);tira.setPixelColor(Pantalla[ 59],100,100,100);tira.setPixelColor(Pantalla[ 58],100,100,100);tira.setPixelColor(Pantalla[ 57],100,100,100);tira.setPixelColor(Pantalla[ 54],100,100,100);tira.setPixelColor(Pantalla[ 53],100,100,100);tira.setPixelColor(Pantalla[ 52],100,100,100);tira.setPixelColor(Pantalla[ 51],100,100,100);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 70],100,100,100);tira.setPixelColor(Pantalla[ 73],100,100,100);tira.setPixelColor(Pantalla[ 76],100,100,100);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 89],100,100,100);tira.setPixelColor(Pantalla[ 86],100,100,100);tira.setPixelColor(Pantalla[ 83],100,100,100);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 102],100,100,100);tira.setPixelColor(Pantalla[ 105],100,100,100);tira.setPixelColor(Pantalla[ 108],100,100,100);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],100,100,100);tira.setPixelColor(Pantalla[ 123],100,100,100);tira.setPixelColor(Pantalla[ 122],100,100,100);tira.setPixelColor(Pantalla[ 121],100,100,100);tira.setPixelColor(Pantalla[ 118],100,100,100);tira.setPixelColor(Pantalla[ 115],100,100,100);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 131],100,100,100);tira.setPixelColor(Pantalla[ 137],100,100,100);tira.setPixelColor(Pantalla[ 140],100,100,100);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 156],100,100,100);tira.setPixelColor(Pantalla[ 150],100,100,100);tira.setPixelColor(Pantalla[ 147],100,100,100);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 163],100,100,100);tira.setPixelColor(Pantalla[ 169],100,100,100);tira.setPixelColor(Pantalla[ 172],100,100,100);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],100,100,100);tira.setPixelColor(Pantalla[ 187],100,100,100);tira.setPixelColor(Pantalla[ 186],100,100,100);tira.setPixelColor(Pantalla[ 185],100,100,100);tira.setPixelColor(Pantalla[ 182],100,100,100);tira.setPixelColor(Pantalla[ 181],100,100,100);tira.setPixelColor(Pantalla[ 180],100,100,100);tira.setPixelColor(Pantalla[ 179],100,100,100);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_Menos_200(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 58],0,255,0);tira.setPixelColor(Pantalla[ 56],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 54],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);tira.setPixelColor(Pantalla[ 50],0,255,0);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 69],0,255,0);tira.setPixelColor(Pantalla[ 71],0,255,0);tira.setPixelColor(Pantalla[ 73],0,255,0);tira.setPixelColor(Pantalla[ 75],0,255,0);tira.setPixelColor(Pantalla[ 77],0,255,0);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 90],0,255,0);tira.setPixelColor(Pantalla[ 88],0,255,0);tira.setPixelColor(Pantalla[ 86],0,255,0);tira.setPixelColor(Pantalla[ 84],0,255,0);tira.setPixelColor(Pantalla[ 82],0,255,0);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 101],0,255,0);tira.setPixelColor(Pantalla[ 103],0,255,0);tira.setPixelColor(Pantalla[ 105],0,255,0);tira.setPixelColor(Pantalla[ 107],0,255,0);tira.setPixelColor(Pantalla[ 109],0,255,0);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],0,255,0);tira.setPixelColor(Pantalla[ 123],0,255,0);tira.setPixelColor(Pantalla[ 122],0,255,0);tira.setPixelColor(Pantalla[ 120],0,255,0);tira.setPixelColor(Pantalla[ 118],0,255,0);tira.setPixelColor(Pantalla[ 116],0,255,0);tira.setPixelColor(Pantalla[ 114],0,255,0);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 131],0,255,0);tira.setPixelColor(Pantalla[ 135],0,255,0);tira.setPixelColor(Pantalla[ 137],0,255,0);tira.setPixelColor(Pantalla[ 139],0,255,0);tira.setPixelColor(Pantalla[ 141],0,255,0);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 156],0,255,0);tira.setPixelColor(Pantalla[ 152],0,255,0);tira.setPixelColor(Pantalla[ 150],0,255,0);tira.setPixelColor(Pantalla[ 148],0,255,0);tira.setPixelColor(Pantalla[ 146],0,255,0);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 163],0,255,0);tira.setPixelColor(Pantalla[ 167],0,255,0);tira.setPixelColor(Pantalla[ 169],0,255,0);tira.setPixelColor(Pantalla[ 171],0,255,0);tira.setPixelColor(Pantalla[ 173],0,255,0);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 187],0,255,0);tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 182],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 178],0,255,0);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_Menos_100(){
+tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 56],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 53],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 68],0,255,0);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);tira.setPixelColor(Pantalla[ 74],0,255,0);tira.setPixelColor(Pantalla[ 76],0,255,0);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 91],0,255,0);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);tira.setPixelColor(Pantalla[ 85],0,255,0);tira.setPixelColor(Pantalla[ 83],0,255,0);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 100],0,255,0);tira.setPixelColor(Pantalla[ 102],0,255,0);tira.setPixelColor(Pantalla[ 104],0,255,0);tira.setPixelColor(Pantalla[ 106],0,255,0);tira.setPixelColor(Pantalla[ 108],0,255,0);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 123],0,255,0);tira.setPixelColor(Pantalla[ 121],0,255,0);tira.setPixelColor(Pantalla[ 119],0,255,0);tira.setPixelColor(Pantalla[ 117],0,255,0);tira.setPixelColor(Pantalla[ 115],0,255,0);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 132],0,255,0);tira.setPixelColor(Pantalla[ 134],0,255,0);tira.setPixelColor(Pantalla[ 136],0,255,0);tira.setPixelColor(Pantalla[ 138],0,255,0);tira.setPixelColor(Pantalla[ 140],0,255,0);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 155],0,255,0);tira.setPixelColor(Pantalla[ 153],0,255,0);tira.setPixelColor(Pantalla[ 151],0,255,0);tira.setPixelColor(Pantalla[ 149],0,255,0);tira.setPixelColor(Pantalla[ 147],0,255,0);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 164],0,255,0);tira.setPixelColor(Pantalla[ 166],0,255,0);tira.setPixelColor(Pantalla[ 168],0,255,0);tira.setPixelColor(Pantalla[ 170],0,255,0);tira.setPixelColor(Pantalla[ 172],0,255,0);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 187],0,255,0);tira.setPixelColor(Pantalla[ 185],0,255,0);tira.setPixelColor(Pantalla[ 184],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 181],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_Menos_70(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 58],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 54],0,255,0);tira.setPixelColor(Pantalla[ 53],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 51],0,255,0);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 73],0,255,0);tira.setPixelColor(Pantalla[ 76],0,255,0);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 86],0,255,0);tira.setPixelColor(Pantalla[ 83],0,255,0);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 102],0,255,0);tira.setPixelColor(Pantalla[ 105],0,255,0);tira.setPixelColor(Pantalla[ 108],0,255,0);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 121],0,255,0);tira.setPixelColor(Pantalla[ 118],0,255,0);tira.setPixelColor(Pantalla[ 115],0,255,0);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 134],0,255,0);tira.setPixelColor(Pantalla[ 137],0,255,0);tira.setPixelColor(Pantalla[ 140],0,255,0);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 153],0,255,0);tira.setPixelColor(Pantalla[ 150],0,255,0);tira.setPixelColor(Pantalla[ 147],0,255,0);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 166],0,255,0);tira.setPixelColor(Pantalla[ 169],0,255,0);tira.setPixelColor(Pantalla[ 172],0,255,0);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 185],0,255,0);tira.setPixelColor(Pantalla[ 182],0,255,0);tira.setPixelColor(Pantalla[ 181],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 179],0,255,0);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+void Valor_00(){
+  tira.setPixelColor(Pantalla[ 0],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 1],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 2],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 3],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 4],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 5],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 6],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 7],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 8],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 9],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 10],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 11],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 12],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 13],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 14],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 15],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 31],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 16],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 32],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 47],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 63],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 60],0,255,0);tira.setPixelColor(Pantalla[ 59],0,255,0);tira.setPixelColor(Pantalla[ 58],0,255,0);tira.setPixelColor(Pantalla[ 57],0,255,0);tira.setPixelColor(Pantalla[ 55],0,255,0);tira.setPixelColor(Pantalla[ 54],0,255,0);tira.setPixelColor(Pantalla[ 53],0,255,0);tira.setPixelColor(Pantalla[ 52],0,255,0);tira.setPixelColor(Pantalla[ 48],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 64],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 67],0,255,0);tira.setPixelColor(Pantalla[ 70],0,255,0);tira.setPixelColor(Pantalla[ 72],0,255,0);tira.setPixelColor(Pantalla[ 75],0,255,0);tira.setPixelColor(Pantalla[ 79],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 95],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 92],0,255,0);tira.setPixelColor(Pantalla[ 89],0,255,0);tira.setPixelColor(Pantalla[ 87],0,255,0);tira.setPixelColor(Pantalla[ 84],0,255,0);tira.setPixelColor(Pantalla[ 80],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 96],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 99],0,255,0);tira.setPixelColor(Pantalla[ 102],0,255,0);tira.setPixelColor(Pantalla[ 104],0,255,0);tira.setPixelColor(Pantalla[ 107],0,255,0);tira.setPixelColor(Pantalla[ 111],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 127],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 124],0,255,0);tira.setPixelColor(Pantalla[ 121],0,255,0);tira.setPixelColor(Pantalla[ 119],0,255,0);tira.setPixelColor(Pantalla[ 116],0,255,0);tira.setPixelColor(Pantalla[ 112],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 128],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 131],0,255,0);tira.setPixelColor(Pantalla[ 134],0,255,0);tira.setPixelColor(Pantalla[ 136],0,255,0);tira.setPixelColor(Pantalla[ 139],0,255,0);tira.setPixelColor(Pantalla[ 143],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 159],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 156],0,255,0);tira.setPixelColor(Pantalla[ 153],0,255,0);tira.setPixelColor(Pantalla[ 151],0,255,0);tira.setPixelColor(Pantalla[ 148],0,255,0);tira.setPixelColor(Pantalla[ 144],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 160],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 163],0,255,0);tira.setPixelColor(Pantalla[ 166],0,255,0);tira.setPixelColor(Pantalla[ 168],0,255,0);tira.setPixelColor(Pantalla[ 171],0,255,0);tira.setPixelColor(Pantalla[ 175],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 191],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 188],0,255,0);tira.setPixelColor(Pantalla[ 187],0,255,0);tira.setPixelColor(Pantalla[ 186],0,255,0);tira.setPixelColor(Pantalla[ 185],0,255,0);tira.setPixelColor(Pantalla[ 183],0,255,0);tira.setPixelColor(Pantalla[ 182],0,255,0);tira.setPixelColor(Pantalla[ 181],0,255,0);tira.setPixelColor(Pantalla[ 180],0,255,0);tira.setPixelColor(Pantalla[ 176],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 192],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 207],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 223],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 208],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 224],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 239],pixel_rojo,pixel_verde,pixel_azul);
+tira.setPixelColor(Pantalla[ 255],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 254],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 253],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 252],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 251],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 250],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 249],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 248],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 247],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 246],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 245],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 244],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 243],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 242],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 241],pixel_rojo,pixel_verde,pixel_azul);tira.setPixelColor(Pantalla[ 240],pixel_rojo,pixel_verde,pixel_azul);
+
+}
+
+
+
 
 void Matriz_Green()
 {
